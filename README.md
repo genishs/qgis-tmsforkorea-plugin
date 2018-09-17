@@ -1,4 +1,5 @@
 qgis-tmsforkorea-plugin
+for QGIS 3.x 
 =======================
 
 

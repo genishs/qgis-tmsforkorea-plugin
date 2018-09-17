@@ -21,8 +21,8 @@ modified             : 2014-09-19 by Minpa Lee, mapplus at gmail.com
  ***************************************************************************/
 """
 
-from qgis.core import QGis, QgsCoordinateReferenceSystem
-from weblayer import WebLayer
+from qgis.core import *
+from .weblayer import WebLayer
 
 
 class WebLayerNgii5179(WebLayer):

@@ -23,5 +23,5 @@ modified             : (C) 2014-09-19 by Minpa Lee, mapplus at gmail.com
 """
 
 def classFactory(iface):
-  from openlayers_plugin import OpenlayersPlugin
+  from .openlayers_plugin import OpenlayersPlugin
   return OpenlayersPlugin(iface)

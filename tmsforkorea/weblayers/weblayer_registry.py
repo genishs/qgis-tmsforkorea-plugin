@@ -20,7 +20,7 @@ email                : pka at sourcepole.ch
  ***************************************************************************/
 """
 
-from weblayer import WebLayerGroup
+from .weblayer import WebLayerGroup
 
 
 class WebLayerTypeRegistry:
@@ -39,7 +39,7 @@ class WebLayerTypeRegistry:
         return self._groups[name]
 
     def groups(self):
-        return self._groups.values()
+        return list(self._groups.values())
 
     def register(self, layerType):
         layerType.group = self.group(layerType.groupName, layerType.groupIcon)
@@ -50,16 +50,16 @@ class WebLayerTypeRegistry:
         self._olLayerTypeNames[layerType.layerTypeName] = layerType
 
     def types(self):
-        return self._olLayerTypes.values()
+        return list(self._olLayerTypes.values())
 
     def getById(self, id):
-        if self._olLayerTypes.has_key(id):
+        if id in self._olLayerTypes:
             return self._olLayerTypes[id]
         else:
             return None
 
     def getByName(self, name):
-        if self._olLayerTypeNames.has_key(name):
+        if name in self._olLayerTypeNames:
             return self._olLayerTypeNames[name]
         else:
             return None

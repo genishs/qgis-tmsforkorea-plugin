@@ -20,14 +20,15 @@ modified             : 2014-09-19 by Minpa Lee, mapplus at gmail.com
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from PyQt4.QtWebKit import *
-from PyQt4.QtNetwork import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtWebKit import *
+from PyQt5.QtWebKitWidgets import *
+from PyQt5.QtNetwork import *
 from qgis.core import *
 from qgis.gui import *
 
-from tools_network import getProxy
+from .tools_network import getProxy
 
 
 debuglevel = 4  # 0 (none) - 4 (all)

@@ -18,8 +18,8 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt4.QtCore import *
-from PyQt4.QtNetwork import *
+from PyQt5.QtCore import *
+from PyQt5.QtNetwork import *
 
 def getProxy():
   # Adaption by source of "Plugin Installer - Version 1.0.10" 

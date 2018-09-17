@@ -21,7 +21,7 @@ modified             : 2014-09-19 by Minpa Lee, mapplus at gmail.com
  ***************************************************************************/
 """
 
-from weblayer import WebLayer3857
+from .weblayer import WebLayer3857
 
 
 class OlVWorldMapsLayer(WebLayer3857):

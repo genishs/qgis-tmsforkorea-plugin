@@ -21,15 +21,17 @@ modified             : 2014-09-19 by Minpa Lee, mapplus at gmail.com
  ***************************************************************************/
 """
 # Import the PyQt and QGIS libraries
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from qgis.core import *
-import resources_rc
-from about_dialog import AboutDialog
-from openlayers_overview import OLOverview
-from openlayers_layer import OpenlayersLayer
-from openlayers_plugin_layer_type import OpenlayersPluginLayerType
-from weblayers.weblayer_registry import WebLayerTypeRegistry
+from PyQt5.QtWidgets import QMenu, QAction
+from qgis.PyQt.QtWidgets import QPushButton, QApplication
+from . import resources_rc
+from .about_dialog import AboutDialog
+from .openlayers_overview import OLOverview
+from .openlayers_layer import OpenlayersLayer
+from .openlayers_plugin_layer_type import OpenlayersPluginLayerType
+from .weblayers.weblayer_registry import WebLayerTypeRegistry
 # from weblayers.google_maps import OlGooglePhysicalLayer, OlGoogleStreetsLayer, OlGoogleHybridLayer, OlGoogleSatelliteLayer
 # from weblayers.osm import OlOpenStreetMapLayer, OlOpenCycleMapLayer, OlOCMLandscapeLayer, OlOCMPublicTransportLayer
 # from weblayers.yahoo_maps import OlYahooStreetLayer, OlYahooHybridLayer, OlYahooSatelliteLayer
@@ -39,11 +41,11 @@ from weblayers.weblayer_registry import WebLayerTypeRegistry
 import os.path
 
 # TMS for Korea 2014-09-19
-from weblayers.vworld_maps import OlVWorldStreetLayer, OlVWorldGrayLayer, OlVWorldHybridLayer, OlVWorldSatelliteLayer
-from weblayers.daum_maps import OlDaumStreetLayer, OlDaumHybridLayer, OlDaumSatelliteLayer, OlDaumPhysicalLayer, OlDaumCadstralLayer
-from weblayers.naver_maps import OlNaverStreetLayer, OlNaverHybridLayer, OlNaverSatelliteLayer, OlNaverPhysicalLayer, OlNaverCadastralLayer
-from weblayers.olleh_maps import OlOllehStreetLayer, OlOllehHybridLayer, OlOllehSatelliteLayer, OlOllehPhysicalLayer, OlOllehCadstralLayer
-from weblayers.ngii_maps import OlNgiiStreetLayer, OlNgiiBlankLayer, OlNgiiEnglishLayer, OlNgiiHighDensityLayer, OlNgiiColorBlindLayer
+from .weblayers.vworld_maps import OlVWorldStreetLayer, OlVWorldGrayLayer, OlVWorldHybridLayer, OlVWorldSatelliteLayer
+from .weblayers.daum_maps import OlDaumStreetLayer, OlDaumHybridLayer, OlDaumSatelliteLayer, OlDaumPhysicalLayer, OlDaumCadstralLayer
+from .weblayers.naver_maps import OlNaverStreetLayer, OlNaverHybridLayer, OlNaverSatelliteLayer, OlNaverPhysicalLayer, OlNaverCadastralLayer
+from .weblayers.olleh_maps import OlOllehStreetLayer, OlOllehHybridLayer, OlOllehSatelliteLayer, OlOllehPhysicalLayer, OlOllehCadstralLayer
+from .weblayers.ngii_maps import OlNgiiStreetLayer, OlNgiiBlankLayer, OlNgiiEnglishLayer, OlNgiiHighDensityLayer, OlNgiiColorBlindLayer
 
 
 class OpenlayersPlugin:
@@ -76,13 +78,14 @@ class OpenlayersPlugin:
         self.overviewAddAction = QAction(QApplication.translate("OpenlayersPlugin", "OpenLayers Overview"), self.iface.mainWindow())
         self.overviewAddAction.setCheckable(True)
         self.overviewAddAction.setChecked(False)
-        QObject.connect(self.overviewAddAction, SIGNAL("toggled(bool)"), self.olOverview.setVisible)
+        #QObject.connect(self.overviewAddAction, SIGNAL("toggled(bool)"), self.olOverview.setVisible) --->
+        self.overviewAddAction.toggled.connect(self.olOverview.setVisible)
         self._olMenu.addAction(self.overviewAddAction)
 
         # Terms of Service
         self._actionAbout = QAction(QApplication.translate("OpenlayersPlugin", "Terms of Service / About"), self.iface.mainWindow())
-        QObject.connect(self._actionAbout, SIGNAL("triggered()"), self.dlgAbout, SLOT("show()"))
-        #? self._actionAbout.triggered.connect(self.dlgAbout, SLOT("show()"))
+        #QObject.connect(self._actionAbout, SIGNAL("triggered()"), self.dlgAbout, SLOT("show()"))
+        self._actionAbout.triggered.connect(self.dlgAbout.show)
         self._olMenu.addAction(self._actionAbout)
 
         # OpenLayers plugin layers
@@ -157,7 +160,8 @@ class OpenlayersPlugin:
         # Register plugin layer type
         pluginLayerType = OpenlayersPluginLayerType(self.iface, self.setReferenceLayer,
                                                     self._olLayerTypeRegistry)
-        QgsPluginLayerRegistry.instance().addPluginLayerType(pluginLayerType)
+        #QgsPluginLayerRegistry.instance().addPluginLayerType(pluginLayerType)
+        QgsApplication.pluginLayerRegistry().addPluginLayerType(pluginLayerType)
 
     def unload(self):
         self.iface.webMenu().removeAction(self._olMenu.menuAction())
@@ -170,7 +174,8 @@ class OpenlayersPlugin:
 
     def addLayer(self, layerType):
         layer = OpenlayersLayer(self.iface, self._olLayerTypeRegistry)
-        layer.setLayerName(layerType.displayName)
+        #layer.setLayerName(layerType.displayName)
+        layer.setName(layerType.displayName)
         layer.setLayerType(layerType)
         if layer.isValid():
             coordRefSys = layerType.coordRefSys(self.canvasCrs())
@@ -185,7 +190,7 @@ class OpenlayersPlugin:
 
     def removeLayer(self, layerId):
         if self.layer is not None:
-            if QGis.QGIS_VERSION_INT >= 10900:
+            if Qgis.QGIS_VERSION_INT >= 10900:
                 if self.layer.id() == layerId:
                     self.layer = None
             else:
@@ -195,10 +200,10 @@ class OpenlayersPlugin:
 
     def canvasCrs(self):
         mapCanvas = self.iface.mapCanvas()
-        if QGis.QGIS_VERSION_INT >= 20300:
+        if Qgis.QGIS_VERSION_INT >= 20300:
             #crs = mapCanvas.mapRenderer().destinationCrs()
             crs = mapCanvas.mapSettings().destinationCrs()
-        elif QGis.QGIS_VERSION_INT >= 10900:
+        elif Qgis.QGIS_VERSION_INT >= 10900:
             crs = mapCanvas.mapRenderer().destinationCrs()
         else:
             crs = mapCanvas.mapRenderer().destinationSrs()
@@ -207,15 +212,16 @@ class OpenlayersPlugin:
     def setMapCrs(self, coordRefSys):
         mapCanvas = self.iface.mapCanvas()
         # On the fly
-        if QGis.QGIS_VERSION_INT >= 20300:
-            mapCanvas.mapSettings().setCrsTransformEnabled(True)
+        if Qgis.QGIS_VERSION_INT >= 20300:
+            #mapCanvas.mapSettings().setCrsTransformEnabled(True)
+            mapCanvas.setCrsTransformEnabled(True)
         else:
             mapCanvas.mapRenderer().setProjectionsEnabled(True)
         canvasCrs = self.canvasCrs()
         if canvasCrs != coordRefSys:
-            if QGis.QGIS_VERSION_INT >= 20300:
+            if Qgis.QGIS_VERSION_INT >= 20300:
                 mapCanvas.setDestinationCrs(coordRefSys)
-            elif QGis.QGIS_VERSION_INT >= 10900:
+            elif Qgis.QGIS_VERSION_INT >= 10900:
                 mapCanvas.mapRenderer().setDestinationCrs(coordRefSys)
             else:
                 mapCanvas.mapRenderer().setDestinationSrs(coordRefSys)

@@ -21,9 +21,17 @@
 """
 import os.path
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from PyQt4.QtNetwork import *
+#from PyQt4.QtCore import *
+#from PyQt4.QtGui import *
+#from PyQt4.QtNetwork import *
+
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtNetwork import *
+
+from PyQt5 import QtWidgets
+#from PyQt5.QtWidgets import QApplication, QDockWidget
+
 from qgis import core, gui, utils
 
 try:
@@ -32,10 +40,10 @@ except ImportError:
     # we are using Python3 so QString is not defined
     QString = type("")
 
-from tools_network import getProxy
-import bindogr
+from .tools_network import getProxy
+from . import bindogr
 
-from ui_openlayers_ovwidget import Ui_Form
+from .ui_openlayers_ovwidget import Ui_Form
 
 class MarkerCursor(QObject):
   def __init__(self, mapCanvas, srsOL):
@@ -79,7 +87,7 @@ class MarkerCursor(QObject):
         pass
     self.__refresh(pointCenter)
 
-class OpenLayersOverviewWidget(QWidget,Ui_Form):
+class OpenLayersOverviewWidget(object):
   def __init__(self, iface, dockwidget, olLayerTypeRegistry):
     QWidget.__init__(self)
     Ui_Form.__init__(self)

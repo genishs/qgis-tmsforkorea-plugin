@@ -18,9 +18,12 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt4.QtCore import Qt
-from PyQt4.QtGui import QApplication, QDockWidget
-from openlayers_ovwidget import OpenLayersOverviewWidget
+#from PyQt4.QtCore import Qt
+#from PyQt4.QtGui import QApplication, QDockWidget
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QApplication, QDockWidget
+from .openlayers_ovwidget import OpenLayersOverviewWidget
 
 
 class OLOverview(object):
@@ -40,7 +43,7 @@ class OLOverview(object):
 
     def _initGui(self):
         self._setDocWidget()
-        self._iface.addDockWidget(Qt.LeftDockWidgetArea, self._dockwidget)
+        self._iface.addDockWidget(QtCore.LeftDockWidgetArea, self._dockwidget)
 
     def _unload(self):
         self._dockwidget.close()

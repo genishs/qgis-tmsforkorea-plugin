@@ -8,8 +8,9 @@
 # Mandatory items:
 
 [general]
-name=TMS for Korea
-qgisMinimumVersion=2.3
+name=TMS for Korea3
+qgisMinimumVersion=3.0
+qgisMaximumVersion=3.99
 description=QGIS plugin. Daum, Naver, Olleh, VWorld, NGII Map Layers for Korean users
 about=QGIS plugin. Daum, Naver, Olleh, VWorld, NGII Map Layers for Korean users
 version=1.5.1

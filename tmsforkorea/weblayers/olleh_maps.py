@@ -37,7 +37,7 @@ class WebLayerOlleh5179(WebLayer):
     def coordRefSys(self, mapCoordSys):
         epsg = self.epsgList[0]
         coordRefSys = QgsCoordinateReferenceSystem()
-        if QGis.QGIS_VERSION_INT >= 10900:
+        if Qgis.QGIS_VERSION_INT >= 10900:
             idEpsgRSGoogle = "EPSG:%d" % epsg
             createCrs = coordRefSys.createFromOgcWmsCrs(idEpsgRSGoogle)
         else:

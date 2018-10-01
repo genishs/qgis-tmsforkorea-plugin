@@ -367,7 +367,7 @@ class OpenlayersLayer(QgsPluginLayer):
         if self.layerType is None:
             #Set default layer type
             self.setLayerType(self.olLayerTypeRegistry.getByName("OpenStreetMap"))
-            if QGis.QGIS_VERSION_INT >= 20300:
+            if Qgis.QGIS_VERSION_INT >= 20300:
                 msg = "Obsolete or unknown layer type '%s', using OpenStreetMap instead" % ol_layer_type_name
                 self.iface.messageBar().pushMessage("OpenLayers Plugin", msg, level=QgsMessageBar.WARNING)
                 QgsMessageLog.logMessage(msg, "OpenLayers Plugin", QgsMessageLog.WARNING)

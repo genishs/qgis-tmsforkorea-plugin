@@ -23,15 +23,18 @@ modified             : 2014-09-19 by Minpa Lee, mapplus at gmail.com
 # Import the PyQt and QGIS libraries
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
-from qgis.core import *
 from PyQt5.QtWidgets import QMenu, QAction
+
+from qgis.core import *
 from qgis.PyQt.QtWidgets import QPushButton, QApplication
+
 from . import resources_rc
 from .about_dialog import AboutDialog
 from .openlayers_overview import OLOverview
 from .openlayers_layer import OpenlayersLayer
 from .openlayers_plugin_layer_type import OpenlayersPluginLayerType
 from .weblayers.weblayer_registry import WebLayerTypeRegistry
+
 # from weblayers.google_maps import OlGooglePhysicalLayer, OlGoogleStreetsLayer, OlGoogleHybridLayer, OlGoogleSatelliteLayer
 # from weblayers.osm import OlOpenStreetMapLayer, OlOpenCycleMapLayer, OlOCMLandscapeLayer, OlOCMPublicTransportLayer
 # from weblayers.yahoo_maps import OlYahooStreetLayer, OlYahooHybridLayer, OlYahooSatelliteLayer
@@ -177,6 +180,7 @@ class OpenlayersPlugin:
         #layer.setLayerName(layerType.displayName)
         layer.setName(layerType.displayName)
         layer.setLayerType(layerType)
+        
         if layer.isValid():
             coordRefSys = layerType.coordRefSys(self.canvasCrs())
             self.setMapCrs(coordRefSys)
@@ -200,37 +204,24 @@ class OpenlayersPlugin:
 
     def canvasCrs(self):
         mapCanvas = self.iface.mapCanvas()
-        if Qgis.QGIS_VERSION_INT >= 20300:
-            #crs = mapCanvas.mapRenderer().destinationCrs()
-            crs = mapCanvas.mapSettings().destinationCrs()
-        elif Qgis.QGIS_VERSION_INT >= 10900:
-            crs = mapCanvas.mapRenderer().destinationCrs()
-        else:
-            crs = mapCanvas.mapRenderer().destinationSrs()
+        crs = mapCanvas.mapRenderer().destinationCrs()
         return crs
 
     def setMapCrs(self, coordRefSys):
         mapCanvas = self.iface.mapCanvas()
+        
         # On the fly
-        if Qgis.QGIS_VERSION_INT >= 20300:
-            #mapCanvas.mapSettings().setCrsTransformEnabled(True)
-            mapCanvas.setCrsTransformEnabled(True)
-        else:
-            mapCanvas.mapRenderer().setProjectionsEnabled(True)
+        #mapCanvas.mapRenderer().setProjectionsEnabled(True)
+        
         canvasCrs = self.canvasCrs()
         if canvasCrs != coordRefSys:
-            if Qgis.QGIS_VERSION_INT >= 20300:
-                mapCanvas.setDestinationCrs(coordRefSys)
-            elif Qgis.QGIS_VERSION_INT >= 10900:
-                mapCanvas.mapRenderer().setDestinationCrs(coordRefSys)
-            else:
-                mapCanvas.mapRenderer().setDestinationSrs(coordRefSys)
-            mapCanvas.freeze(False)
-            mapCanvas.setMapUnits(coordRefSys.mapUnits())
+            mapCanvas.mapRenderer().setDestinationSrs(coordRefSys)
             try:
                 coodTrans = QgsCoordinateTransform(canvasCrs, coordRefSys)
                 extMap = mapCanvas.extent()
                 extMap = coodTrans.transform(extMap, QgsCoordinateTransform.ForwardTransform)
+                mapCanvas.setDestinationCrs(coordRefSys)
+                mapCanvas.freeze(False)
                 mapCanvas.setExtent(extMap)
             except:
                 pass

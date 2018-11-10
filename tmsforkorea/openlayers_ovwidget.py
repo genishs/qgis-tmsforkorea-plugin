@@ -30,6 +30,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtNetwork import *
 
 from PyQt5 import QtWidgets
+from PyQt5.QtWidgets import *
 #from PyQt5.QtWidgets import QApplication, QDockWidget
 
 from qgis import core, gui, utils
@@ -87,7 +88,7 @@ class MarkerCursor(QObject):
         pass
     self.__refresh(pointCenter)
 
-class OpenLayersOverviewWidget(object):
+class OpenLayersOverviewWidget(QWidget, Ui_Form):
   def __init__(self, iface, dockwidget, olLayerTypeRegistry):
     QWidget.__init__(self)
     Ui_Form.__init__(self)

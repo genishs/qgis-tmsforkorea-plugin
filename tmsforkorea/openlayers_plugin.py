@@ -184,7 +184,8 @@ class OpenlayersPlugin:
         if layer.isValid():
             coordRefSys = layerType.coordRefSys(self.canvasCrs())
             self.setMapCrs(coordRefSys)
-            QgsMapLayerRegistry.instance().addMapLayer(layer)
+            #QgsMapLayerRegistry.instance().addMapLayer(layer)
+            QgsProject.instance().addMapLayer(layer)
 
             # last added layer is new reference
             self.setReferenceLayer(layer)
@@ -204,7 +205,7 @@ class OpenlayersPlugin:
 
     def canvasCrs(self):
         mapCanvas = self.iface.mapCanvas()
-        crs = mapCanvas.mapRenderer().destinationCrs()
+        crs = mapCanvas.mapSettings().destinationCrs()
         return crs
 
     def setMapCrs(self, coordRefSys):
@@ -215,7 +216,8 @@ class OpenlayersPlugin:
         
         canvasCrs = self.canvasCrs()
         if canvasCrs != coordRefSys:
-            mapCanvas.mapRenderer().setDestinationSrs(coordRefSys)
+            '''
+            mapCanvas.mapSettings().setDestinationSrs(coordRefSys)
             try:
                 coodTrans = QgsCoordinateTransform(canvasCrs, coordRefSys)
                 extMap = mapCanvas.extent()
@@ -225,3 +227,11 @@ class OpenlayersPlugin:
                 mapCanvas.setExtent(extMap)
             except:
                 pass
+            '''
+            
+            coodTrans = QgsCoordinateTransform(canvasCrs, coordRefSys,QgsProject.instance())
+            extMap = mapCanvas.extent()
+            extMap = coodTrans.transform(extMap, QgsCoordinateTransform.ForwardTransform)
+            mapCanvas.setDestinationCrs(coordRefSys)
+            mapCanvas.freeze(False)
+            mapCanvas.setExtent(extMap)

@@ -99,7 +99,7 @@ class WebLayer:
         self._addLayerCallback(self)
 
     def html_url(self):
-        dir = os.path.dirname(str(__file__, sys.getfilesystemencoding()))
+        dir = os.path.dirname(__file__)
         url = "file:///%s/html/%s" % (dir.replace("\\", "/"), self._html)
         return url
 

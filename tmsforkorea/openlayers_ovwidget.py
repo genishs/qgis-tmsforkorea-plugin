@@ -150,31 +150,39 @@ class OpenLayersOverviewWidget(QWidget, Ui_Form):
 
   def __setConnections(self):
     # Check Box
-    self.connect(self.checkBoxEnableMap, SIGNAL("stateChanged (int)"),
-                 self.__signal_checkBoxEnableMap_stateChanged)
-    self.connect(self.checkBoxHideCross, SIGNAL("stateChanged (int)"),
-                 self.__signal_checkBoxHideCross_stateChanged)
+    # self.connect(self.checkBoxEnableMap, SIGNAL("stateChanged (int)"), self.__signal_checkBoxEnableMap_stateChanged)
+    self.checkBoxEnableMap.stateChanged.connect(self.__signal_checkBoxEnableMap_stateChanged)
+    # self.connect(self.checkBoxHideCross, SIGNAL("stateChanged (int)"), self.__signal_checkBoxHideCross_stateChanged)
+    self.checkBoxHideCross.stateChanged.connect(self.__signal_checkBoxHideCross_stateChanged)
     # comboBoxTypeMap
-    self.connect(self.comboBoxTypeMap, SIGNAL(" currentIndexChanged (int)"),
-                 self.__signal_comboBoxTypeMap_currentIndexChanged)
+    # self.connect(self.comboBoxTypeMap, SIGNAL(" currentIndexChanged (int)"),
+    #              self.__signal_comboBoxTypeMap_currentIndexChanged)
+    self.comboBoxTypeMap.currentIndexChanged.connect(self.__signal_comboBoxTypeMap_currentIndexChanged)
     # Canvas
-    self.connect(self.__canvas, SIGNAL("extentsChanged()"),
-                 self.__signal_canvas_extentsChanged)
+    # self.connect(self.__canvas, SIGNAL("extentsChanged()"),
+    #              self.__signal_canvas_extentsChanged)
+    self.__canvas.extentsChanged.connect(self.__signal_canvas_extentsChanged)
     # Doc WidgetparentWidget
-    self.connect(self.__dockwidget, SIGNAL("visibilityChanged (bool)"),
-                 self.__signal_DocWidget_visibilityChanged)
+    # self.connect(self.__dockwidget, SIGNAL("visibilityChanged (bool)"),
+    #              self.__signal_DocWidget_visibilityChanged)
+    self.__dockwidget.visibilityChanged.connect(self.__signal_DocWidget_visibilityChanged)
     # WebView Map
-    self.connect(self.webViewMap.page().mainFrame(), SIGNAL("javaScriptWindowObjectCleared()"),
-                 self.__registerObjJS)
+    # self.connect(self.webViewMap.page().mainFrame(), SIGNAL("javaScriptWindowObjectCleared()"),
+    #              self.__registerObjJS)
+    self.webViewMap.page().mainFrame().javaScriptWindowObjectCleared.connect(self.__registerObjJS)
     # Push Button
-    self.connect(self.pbRefresh, SIGNAL("clicked (bool)"),
-                 self.__signal_pbRefresh_clicked)
-    self.connect(self.pbAddRaster, SIGNAL("clicked (bool)"),
-                 self.__signal_pbAddRaster_clicked)
-    self.connect(self.pbCopyKml, SIGNAL("clicked (bool)"),
-                 self.__signal_pbCopyKml_clicked)
-    self.connect(self.pbSaveImg, SIGNAL("clicked (bool)"),
-                 self.__signal_pbSaveImg_clicked)
+    # self.connect(self.pbRefresh, SIGNAL("clicked (bool)"),
+    #              self.__signal_pbRefresh_clicked)
+    self.pbRefresh.clicked.connect(self.__signal_pbRefresh_clicked)
+    # self.connect(self.pbAddRaster, SIGNAL("clicked (bool)"),
+    #              self.__signal_pbAddRaster_clicked)
+    self.pbAddRaster.clicked.connect(self.__signal_pbAddRaster_clicked)
+    # self.connect(self.pbCopyKml, SIGNAL("clicked (bool)"),
+    #              self.__signal_pbCopyKml_clicked)
+    self.pbCopyKml.clicked.connect(self.__signal_pbCopyKml_clicked)
+    # self.connect(self.pbSaveImg, SIGNAL("clicked (bool)"),
+    #              self.__signal_pbSaveImg_clicked)
+    self.pbSaveImg.clicked.connect(self.__signal_pbSaveImg_clicked)
 
   def __registerObjJS(self):
     self.webViewMap.page().mainFrame().addToJavaScriptWindowObject("MarkerCursorQGis", self.__marker)
@@ -291,16 +299,18 @@ class OpenLayersOverviewWidget(QWidget, Ui_Form):
         pass
     self.lbStatusRead.setVisible( False )
     self.webViewMap.setVisible( True )
-    self.disconnect(self.webViewMap.page().mainFrame(), SIGNAL("loadFinished (bool)"),
-                 self.__signal_webViewMap_loadFinished)
+    # self.disconnect(self.webViewMap.page().mainFrame(), SIGNAL("loadFinished (bool)"),
+    #              self.__signal_webViewMap_loadFinished)
+    self.webViewMap.page().mainFrame().loadFinished.disconnect(self.__signal_webViewMap_loadFinished)
 
   def __setWebViewMap(self, id):
     layer = self.__olLayerTypeRegistry.getById( id )
     self.lbStatusRead.setText( "Loading " +  layer.displayName + " ...")
     self.lbStatusRead.setVisible( True )
     self.webViewMap.setVisible( False )
-    self.connect(self.webViewMap.page().mainFrame(), SIGNAL("loadFinished (bool)"),
-                 self.__signal_webViewMap_loadFinished)
+    # self.connect(self.webViewMap.page().mainFrame(), SIGNAL("loadFinished (bool)"),
+    #              self.__signal_webViewMap_loadFinished)
+    self.webViewMap.page().mainFrame().loadFinished.connect(self.__signal_webViewMap_loadFinished)
     url = layer.html_url()
     self.webViewMap.page().mainFrame().load( QUrl(url) )
 
@@ -313,7 +323,9 @@ class OpenLayersOverviewWidget(QWidget, Ui_Form):
 
   def __getCenterLongLat2OL(self):
     pntCenter = self.__canvas.extent().center()
-    crsCanvas = self.__canvas.mapRenderer().destinationCrs()
+    # crsCanvas = self.__canvas.mapRenderer().destinationCrs()
+    crsCanvas = self.__canvas.mapSettings().destinationCrs()
+
     if crsCanvas != self.__srsOL:
       coodTrans = core.QgsCoordinateTransform(crsCanvas, self.__srsOL)
       pntCenter = coodTrans.transform(pntCenter, core.QgsCoordinateTransform.ForwardTransform)

@@ -43,7 +43,8 @@ class OLOverview(object):
 
     def _initGui(self):
         self._setDocWidget()
-        self._iface.addDockWidget(QtCore.LeftDockWidgetArea, self._dockwidget)
+        # self._iface.addDockWidget(QtCore.LeftDockWidgetArea, self._dockwidget)
+        self._iface.addDockWidget(QtCore.Qt.LeftDockWidgetArea, self._dockwidget)
 
     def _unload(self):
         self._dockwidget.close()

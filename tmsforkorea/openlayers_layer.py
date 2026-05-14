@@ -367,18 +367,30 @@ class OpenlayersLayer(QgsPluginLayer):
 
         if ol_layer_type is not None:
             self.setLayerType(ol_layer_type)
-        else:
-            # Set default layer type
-            self.setLayerType(
-                self.olLayerTypeRegistry.getByName("OpenStreetMap"))
-            msg = "Obsolete or unknown layer type '%s', using OpenStreetMap\
-             instead" % ol_layer_type_name
+            return True
+
+        fallback = self.olLayerTypeRegistry.getByName("OpenStreetMap")
+        if fallback is not None:
+            self.setLayerType(fallback)
+            msg = ("Obsolete or unknown layer type '%s', using OpenStreetMap "
+                   "instead") % ol_layer_type_name
             self.iface.messageBar().pushMessage("OpenLayers Plugin", msg,
                                                 level=Qgis.MessageLevel.Warning)
             QgsMessageLog.logMessage(msg, "OpenLayers Plugin",
                                      Qgis.MessageLevel.Warning)
+            return True
 
-        return True
+        # No matching layer type and no OSM fallback available — mark invalid
+        # so QGIS shows the layer as broken rather than crashing in projectLoaded.
+        self.setValid(False)
+        msg = ("Layer '%s' uses a provider no longer supported in QGIS 4 "
+               "('%s'). The layer has been removed. Please re-add it from "
+               "the TMS for Korea menu.") % (self.name(), ol_layer_type_name)
+        self.iface.messageBar().pushMessage("OpenLayers Plugin", msg,
+                                            level=Qgis.MessageLevel.Warning)
+        QgsMessageLog.logMessage(msg, "OpenLayers Plugin",
+                                 Qgis.MessageLevel.Warning)
+        return False
 
     def writeXml(self, node, doc, context):
         element = node.toElement()

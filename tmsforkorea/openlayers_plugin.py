@@ -205,6 +205,10 @@ class OpenlayersPlugin:
         rootGroup = self.iface.layerTreeView().layerTreeModel().rootGroup()
         for layer in QgsProject.instance().mapLayers().values():
             if layer.type() == QgsMapLayer.PluginLayer and layer.pluginLayerType() == OpenlayersLayer.LAYER_TYPE:
+                # Defensive: readXml may have set layerType=None when the
+                # stored ol_layer_type is unregistered and OSM fallback is absent.
+                if layer.layerType is None:
+                    continue
                 if layer.layerType.hasXYZUrl():
                     # replace layer
                     xyzLayer, url = self.createXYZLayer(layer.layerType,

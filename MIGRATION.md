@@ -1,0 +1,368 @@
+# QGIS 3.x → 4.x 마이그레이션 기록
+
+`tmsforkorea` 플러그인의 QGIS 4.0 (Qt6) 포팅 작업 전체 기록.
+
+- **시작 / 완료**: 2026-05-14 (단일 세션)
+- **결과 산출물**: v4.0.0 (태그 `v4.0.0`, 브랜치 `4.x/main`)
+- **검증 환경**: QGIS 4.0.1-Norrköping, Python 3.12.13, Windows 11
+
+---
+
+## TL;DR
+
+3.x 코드의 절반이 Qt6에서 사라진 `QtWebKit` 위에 올라가 있었다. 이를 **포기**하고 가능한 레이어만 **표준 XYZ 타일**로 재구성하여 QGIS 4.x에서 동작하는 플러그인을 완성했다.
+
+| | 3.0.5 | 4.0.0 |
+|---|---|---|
+| 동작 레이어 수 | 19개 (실제로는 일부 dead) | **9개** (모두 검증됨) |
+| 의존성 | Qt5 + QtWebKit + OpenLayers.js | Qt6 + QgsRasterLayer(xyz) |
+| 코드 라인 | (기준) | -750줄 / +200줄 |
+| 신규 layer | — | **OpenStreetMap Standard** |
+
+---
+
+## 1. 배경과 목적
+
+이 플러그인은 한국 사용자를 위해 Kakao(Daum)·Naver·VWorld·NGII 지도 타일을 QGIS에 표시한다. 2009년 OpenLayers Plugin에서 fork되어 2018년 QGIS 3.x용 포팅이 마지막으로 이루어졌고, 2022년 5월의 v3.0.5가 직전 stable이었다.
+
+사용자가 QGIS 4.0.1을 설치한 시점에 기존 zip은 plugin 매니저에서 **classFactory() 호출 단계에서 ImportError로 즉시 실패**했고, 마이그레이션이 필요했다.
+
+### 1.1 핵심 블로커: QtWebKit 제거
+
+Qt6에서 `QtWebKit` 모듈은 **완전히 제거**되었다 (Qt5 시절 deprecated, 대체품은 Chromium 기반 `QtWebEngine`). 이 플러그인의 렌더링 경로는 두 갈래였다:
+
+1. **XYZ 타일 경로** — VWorld 4종이 사용. `QgsRasterLayer(wms/type=xyz)`로 처리. QtWebKit 무관.
+2. **WebKit + OpenLayers.js 경로** — Kakao·Naver·NGII·Mango가 사용. 로컬 HTML을 `QWebPage`로 로드해 OpenLayers 2.x로 타일을 그린 뒤 스크린샷을 QGIS 캔버스에 그림.
+
+두 번째 경로의 모듈이 `from qgis.PyQt.QtWebKitWidgets import QWebPage`를 import해서 plugin 로드 즉시 `ImportError`. 한 줄도 우회 불가.
+
+### 1.2 부수 호환성 이슈
+
+- `pyrcc5`/`pyuic5` 생성 파일의 `from PyQt5 import …` 하드코딩
+- Qt5-style enum short alias (`Qt.AlignCenter`, `Qt.LinksAccessibleByMouse` 등) — PyQt6는 거부
+- 일부 QGIS API rename: `QgsMessageLog.INFO` → `Qgis.MessageLevel.Info`, `createFromProj4` → `createFromProj`, `QgsCoordinateTransform.ForwardTransform` → `Qgis.TransformDirection.Forward`
+
+---
+
+## 2. 사전 분석
+
+### 2.1 영향도 매트릭스
+
+| 레이어 그룹 | 렌더링 방식 | 4.x 호환성 | 결정 |
+|---|---|---|---|
+| VWorld (4) | XYZ URL (EPSG:3857) | 즉시 호환 | **유지** |
+| Naver v5 (5) | XYZ URL 정의되어 있으나 `xyzUrl=None` 버그 | 버그 fix로 활성화 가능 | **유지 (Cadastral 제외)** |
+| Kakao/Daum (5) | WebKit + EPSG:5181 | 표준 XYZ로 변환 불가 (커스텀 타일 스킴) | **4.1+ 연기** |
+| NGII (5) | WebKit + EPSG:5179 | 동상 | **4.1+ 연기** |
+| Mango (4) | XYZ + 외부 서버 | 서버 dead (ECONNREFUSED) | **deferred until upstream 복귀** |
+| Overview dock | QWebView + 동기 evaluateJavaScript | Qt6 incompatible | **삭제** |
+
+### 2.2 의사결정
+
+**D1 (Kakao를 4.0.0에 포함?)**: **No, 4.1+로 연기.**
+- 근거: 카카오 타일이 EPSG:5181의 비표준 스킴(역방향 z, 바닥 기준 y, 커스텀 해상도 `[2048,1024,…,0.25]`)을 사용. QGIS의 표준 XYZ provider로 처리 불가능. GDAL TMS minidriver의 XML 우회는 가능성 있으나 실측 검증이 필요해 import-clean 릴리스 scope에서 분리.
+
+**D2 (NGII 포함?)**: **No, 4.1+로 연기.** EPSG:5179이지만 카카오와 동일한 사정.
+
+**D3 (Mango)**: 영구 deferred. 코드는 보존, 등록만 비활성화.
+
+**D4 (Overview dock)**: 4.0.0에서 영구 삭제. QtWebEngine 포팅은 동기 JS API → 비동기로 전면 재작성이 필요해 비용 과다. 필요 시 4.1+에서 `QgsMapCanvas` 기반 mini-map으로 재구현 후보.
+
+**4.0.0 scope 확정**: VWorld(4) + Naver(4) + OpenStreetMap(1, 신규) = **총 9개 레이어**
+
+---
+
+## 3. 마이그레이션 계획
+
+### 3.1 호환성 전략
+
+3.x/4.x 단일 코드베이스 대신 **4.x 전용 포크**로 분리.
+
+근거:
+1. WebKit 코드 경로 제거가 본질이라 dual-support 런타임 가드가 비효율적
+2. QGIS Plugin Repository는 버전별 호환 빌드 자동 분배 지원
+3. 3.x 브랜치는 이미 유지보수 모드 (2022/05 이후 변경 없음)
+
+### 3.2 브랜치 전략
+
+```
+master                          ← 3.x 동결 (변경 없음)
+ │
+ └─ 4.x/main                    ← 4.x 통합 브랜치
+     ├─ 4.x/phase0-import-fix
+     ├─ 4.x/phase0-api-fixes
+     ├─ 4.x/phase1-readxml-guard
+     ├─ 4.x/phase1-bundle       ← Naver+OSM+URL인코딩 (스코프 통합)
+     ├─ 4.x/phase1-release-prep
+     ├─ 4.x/phase1-hotfix-pyqt
+     ├─ 4.x/phase1-hotfix-qt6-enums
+     ├─ 4.x/release-4.0.0
+     └─ 4.x/docs-migration-record  ← 본 문서
+```
+
+모든 phase 브랜치는 `4.x/main`에서 분기 → 검증 통과 → `--no-ff` merge.
+
+### 3.3 하네스 (가상 팀 구성)
+
+총 7명:
+
+| 스쿼드 | 역할 | 모델 |
+|---|---|---|
+| 기획·설계 | Design Architect (리더) | Opus 4.7 |
+| 기획·설계 | Compatibility Analyst | Sonnet 4.6 |
+| 기획·설계 | Domain Research Specialist | Sonnet 4.6 |
+| 개발 | Tech Lead Architect (리더) | Opus 4.7 |
+| 개발 | Senior Plugin Developer | Sonnet 4.6 |
+| 개발 | Junior Developer | Sonnet 4.6 |
+| 품질 | Code Verification Expert | Sonnet 4.6 |
+
+매 phase 워크플로우:
+```
+Design Architect 사양 작성 (필요시 Compatibility + Domain Research 병렬 인풋)
+  ↓
+Tech Lead / Senior / Junior 실행
+  ↓
+Code Verification 게이트 (APPROVED / REJECTED)
+  ↓
+push → merge → 다음 phase
+```
+
+### 3.4 의사결정 게이트
+
+- **G1**: Phase 0 종료 — plugin이 QGIS 4에서 ImportError 없이 로드되는가?
+- **G2**: Phase 1 종료 — VWorld + Naver + OSM 모두 동작하는가?
+- **G3**: D1/D2 — Kakao/NGII를 4.0.0에 포함할지 4.1로 연기할지
+- **G4**: 4.0.0 릴리스 컷
+
+---
+
+## 4. 실행 로그
+
+### Phase 0 — WebKit 제거
+
+#### `4.x/phase0-import-fix` (Senior Dev → 머지 `2d8a33d`)
+- `openlayers_layer.py:27` `from qgis.PyQt.QtWebKitWidgets import QWebPage` 삭제
+- `OLWebPage(QWebPage)` 클래스 삭제
+- `openlayers_overview.py`, `openlayers_ovwidget.py`, `ui_openlayers_ovwidget.{py,ui}`, `bindogr.py` 파일 삭제
+- Kakao/Naver/NGII/Mango 등록 코드 주석화
+- `OpenlayersLayer.createMapRenderer()` → `return None` (legacy `.qgs` 호환)
+- 5 파일 삭제, 736줄 제거, 21줄 추가
+
+#### `4.x/phase0-api-fixes` (메인 세션 → 머지 `1463cfe`, 태그 `v4.0.0-alpha1` 상응)
+- `QgsMessageLog.INFO/WARNING` → `Qgis.MessageLevel.Info/Warning`
+- `Qgis.MessageLevel(0|1)` (int ctor) → enum member
+- `QgsCoordinateTransform.ForwardTransform` → `Qgis.TransformDirection.Forward`
+- `createFromProj4` → `createFromProj` (4 파일)
+- `metadata.txt`: version 4.0.0, qgisMinimumVersion 4.0
+
+검증 이력: 1차 REJECT (커밋 누락 catch), 2차 APPROVED.
+
+### Phase 1 — XYZ 활성화 + OSM
+
+#### `4.x/phase1-readxml-guard` (메인 세션 → 머지 `6023b41`)
+
+선행 조건. `OpenlayersLayer.readXml`의 `getByName("OpenStreetMap")` fallback이 None 반환 시 `setLayerType(None)` 호출 → `projectLoaded`가 `layer.layerType.hasXYZUrl()`에서 `AttributeError`. 가드:
+- `readXml`: 명명 lookup → OSM fallback → 둘 다 실패 시 `setValid(False)` + 사용자 경고 + `return False`
+- `projectLoaded`: `if layer.layerType is None: continue`
+
+#### Domain Research + Compatibility Analyst 병렬 인풋
+
+**Domain Research 발견**:
+- **Naver 토큰 dead**: 하드코딩된 `1651664082`는 HTTP 400. discovery JSON 엔드포인트 `https://map.pstatic.net/nrb/styles/<style>.json?fmt=jpg&mt=bg.ol.ts.ar.lko` 발견. 현행 토큰 `1778232861` 확인 (2026-05-14 기준).
+- **Mango 서버 dead**: `mango.iptime.org:8995/8996` ECONNREFUSED.
+- **URL 인코딩 필요**: Naver URL의 `?mt=...` 쿼리가 XYZ URI 파서와 충돌. `urllib.parse.quote(url, safe='')` 필요. QGIS issue #59143로 확인.
+- **OSM 정책**: standard 타일 서버가 unique UA 요구하지만 QGIS 기본 UA는 허용 범위.
+
+**Compatibility Analyst 발견**:
+- 3.x 프로젝트의 Naver PluginLayer는 Phase 1 후 `replaceLayer` 경로로 자동 XYZ 업그레이드 (graceful).
+- Kakao 저장 레이어는 4.0.0에서 영구 broken — readXml 가드가 크래시만 방지.
+
+#### `4.x/phase1-bundle` (Senior + Junior 통합 → 머지 `3e07eaf`)
+
+원래 `phase1-naver-url-encode`와 `phase1-osm-add` 둘로 분할 계획. dev 에이전트 간 스코프 혼선으로 두 작업이 한 브랜치에 commingle됨 → `phase1-osm-add` → `phase1-bundle` 리네임 후 누락된 OSM wiring을 메인 세션이 보강.
+
+포함 내용:
+- `weblayers/naver_maps.py`: 모듈 레벨 `_resolveNaverVersion(style)` 헬퍼 (3s timeout, per-style 캐시, 실패 시 `NAVER_FALLBACK_VERSION="1778232861"`, 첫 실패만 `QgsMessageLog.Warning`). 5개 Naver 클래스에서 `xyzUrl=None` → `xyzUrl=tmsUrl` (버그 수정). Cadastral은 클래스만 두고 등록은 DEFERRED 처리.
+- 새 파일 `weblayers/osm_maps.py`: `OlOSMLayer(WebLayer3857)` + `OlOSMStandardLayer`. URL `https://tile.openstreetmap.org/{z}/{x}/{y}.png`. attribution `© OpenStreetMap contributors`.
+- `openlayers_plugin.py`: 4개 Naver + 1개 OSM register. `urllib.parse.quote` 임포트. `createXYZLayer`의 두 URI 빌드 사이트 percent-encoding.
+
+#### `4.x/phase1-release-prep` (메인 세션 → 머지 `4ee0300`, 태그 `v4.0.0-beta1`)
+- `metadata.txt`: version=4.0.0-beta1, description/tags refresh.
+- `README.md`: working layer list 갱신.
+
+### 사용자 보고 #1 → `v4.0.0-beta2`
+
+**증상**: `ImportError: PyQt5 classes cannot be imported in a QGIS build based on Qt6` (`classFactory` → `resources_rc.py:9`).
+
+**원인**: `pyrcc5`/`pyuic5` 자동 생성 파일의 `from PyQt5 import ...` 하드코딩.
+
+#### `4.x/phase1-hotfix-pyqt` (메인 세션 → 머지 `365e14d`, 태그 `v4.0.0-beta2`)
+- `resources_rc.py`: `from PyQt5 import QtCore` → `from qgis.PyQt import QtCore`
+- `ui_about_dialog.py`: 동상 (QtCore, QtGui, QtWidgets)
+
+### 사용자 보고 #2 → `v4.0.0-beta3`
+
+**증상**: `AttributeError: type object 'Qt' has no attribute 'LinksAccessibleByMouse'` (plugin `__init__`의 `AboutDialog()` 생성 단계).
+
+**원인**: PyQt6는 short enum alias 거부. fully-qualified spelling (`Qt.TextInteractionFlag.LinksAccessibleByMouse` 등)만 허용.
+
+#### `4.x/phase1-hotfix-qt6-enums` (메인 세션 → 머지 `fdc8310`, 태그 `v4.0.0-beta3`)
+- `ui_about_dialog.py`: 5개 enum 사이트 fully-qualified (Qt5/Qt6 양방향 호환):
+  - `Qt.AlignCenter` → `Qt.AlignmentFlag.AlignCenter`
+  - `Qt.LinksAccessibleByMouse|Qt.TextSelectableByMouse` → `Qt.TextInteractionFlag.LinksAccessibleByMouse|Qt.TextInteractionFlag.TextSelectableByMouse`
+  - `Qt.TextBrowserInteraction` → `Qt.TextInteractionFlag.TextBrowserInteraction`
+  - `Qt.Horizontal` → `Qt.Orientation.Horizontal`
+  - `QDialogButtonBox.Close` → `QDialogButtonBox.StandardButton.Close`
+- `openlayers_layer.py` (dead code, future-proof): `Qt.KeepAspectRatio` → `Qt.AspectRatioMode.KeepAspectRatio`, `Qt.SmoothTransformation` → `Qt.TransformationMode.SmoothTransformation`, `QImage.Format_ARGB32_Premultiplied` → `QImage.Format.Format_ARGB32_Premultiplied`
+- **`AboutDialog` lazy construction**: `_getAboutDialog()` 헬퍼 통해 첫 메뉴 클릭 시 생성. plugin `__init__`이 dialog를 건드리지 않음 → 향후 enum 이슈가 plugin 로드 자체는 안 막음.
+
+### 최종 릴리스 → `v4.0.0`
+
+사용자 보고: beta3에서 plugin 로드 + 레이어 렌더링 확인.
+
+#### `4.x/release-4.0.0` (메인 세션 → 머지 `be16a8b`, 태그 `v4.0.0`)
+- `metadata.txt`: version=4.0.0 (beta suffix 제거), changelog 정리
+- `README.md`: 베타 notice 제거, install ZIP 안내 추가
+
+---
+
+## 5. 최종 결과
+
+### 5.1 동작 확인 환경
+QGIS 4.0.1-Norrköping (1ccf690c) / Python 3.12.13 / PyQt6 / Windows 11
+
+### 5.2 동작하는 레이어 (9개)
+
+| 그룹 | 레이어 | CRS | 비고 |
+|---|---|---|---|
+| VWorld Maps | Street, Gray, Satellite, Hybrid | EPSG:3857 | 표준 XYZ |
+| Naver Maps v5 | Street, Hybrid, Satellite, Physical | EPSG:3857 | 동적 버전 토큰 fetch + fallback |
+| OpenStreetMap | Standard | EPSG:3857 | 신규 추가 |
+
+### 5.3 의식적으로 deferred
+
+| 항목 | 사유 | 후속 마일스톤 |
+|---|---|---|
+| Kakao (5종) | EPSG:5181 + 비표준 타일 스킴 | 4.1+ (GDAL TMS XML) |
+| NGII (5종) | EPSG:5179 동상 | 4.1+ |
+| Naver Cadastral | 단순 등록 누락 | 4.1 |
+| OSM 변형 (HOT, CyclOSM, OpenTopoMap) | 기본 1개만 ship | 4.1 |
+| OpenLayers Overview dock | QtWebKit 의존 | 영구 제거 또는 4.x에서 `QgsMapCanvas` 기반 재구현 후보 |
+| Mango (4종) | 업스트림 서버 down | 서버 복귀 시 |
+| `osm_icon.png` + `resources_rc` 재빌드 | 4.0.0은 `openlayers.png` 재활용 | 4.1 |
+
+### 5.4 통계
+
+- 머지된 phase 브랜치: 7개
+- 발급된 태그: `v4.0.0-beta1`, `v4.0.0-beta2`, `v4.0.0-beta3`, `v4.0.0`
+- 검증 사이클: 9회 (APPROVED 8회, REJECTED 1회 → 재시도 후 APPROVED)
+- 코드 변화: 약 -750줄 / +200줄
+
+---
+
+## 6. 회고
+
+### 작동한 것
+1. **검증 게이트의 실효성** — 1회 미커밋 catch (`4.x/phase0-import-fix`), 1회 scope 위반 catch (`4.x/phase1-osm-add`의 Naver 혼입). 자동화된 `grep` + `ast.parse` + 시맨틱 readback이 인간 실수를 잡음.
+2. **단계별 zip 빌드** — beta1/2/3 각각을 실제 QGIS 4 인스턴스에서 사용자가 install-from-zip → 빠른 피드백 사이클. 사전에 추정하기 어려운 Qt6 호환성 이슈 두 건이 베타 사이클에서 발견됨.
+3. **lazy AboutDialog 패턴** — beta3에서 도입. plugin `__init__`을 최소화하니 향후 변경의 영향 범위가 줄어듦. 4.1에서 Qt6 enum 잔존 issue가 발생해도 plugin 로드 자체는 보장됨.
+
+### 잘 안 된 것
+1. **병렬 dev 에이전트의 working tree 충돌** — Senior + Junior가 동일한 working directory에서 동시 작업 → `openlayers_plugin.py` 동시 수정. 향후 phase는 `Agent(isolation: "worktree")` 강제 사용 권장.
+2. **Senior Dev 스코프 이탈** — Naver 작업 대신 `.claude/settings.json` 수정 시도. 강제 종료 후 메인 세션이 작업 인수. 에이전트 프롬프트에 "out-of-scope file 수정 금지" 명시적 가드 필요.
+3. **Junior Dev 스코프 위반** — OSM만 해야 하는데 Senior의 Naver 작업까지 가져옴. 검증 게이트가 잡았으나 두 브랜치를 번들로 통합해서 회복하는 비용이 발생.
+4. **사전 위험 항목 무시** — 초기 Plan agent가 "`resources_rc.py` PyQt5 잠재 이슈"를 risk로 식별했었으나 beta1 zip에 그대로 포함됨 → beta2 핫픽스 필요. 향후 risk 항목은 빌드 prep 단계에서 명시적 grep/test로 reproduce 필수.
+
+### 향후 phase에 권고
+- `Agent(isolation: "worktree")`로 병렬 dev 격리
+- pre-flight risk validation 체크리스트 도입 (Plan agent risk 목록 → 빌드 전 자동 grep)
+- Qt6 enum audit: ui_about_dialog 외에도 동적 호출 경로 잔존 가능성 → 전수 grep + 옵션 dialog 시연 테스트
+
+---
+
+## 7. 4.1 로드맵 후보
+
+우선순위 순:
+
+1. **Kakao GDAL TMS XML 검증**
+   - `<GDAL_WMS><Service name="TMS">` XML로 `QgsRasterLayer(xml, name, "gdal")` 로드
+   - 검증 포인트: EPSG:5181 maxExtent `(-30000, -60000, 494288, 988576)`, `YOrigin=bottom`, 역방향 zoom
+   - 미확인 위험: GDAL TMS minidriver의 역방향 zoom native 지원 여부
+
+2. **NGII GDAL TMS XML** — Kakao와 유사 패턴, EPSG:5179. 실제 타일 URL은 `weblayers/html/OpenLayers.Layer.Ngii*.js`에서 추출
+
+3. **Naver Cadastral 재등록** — `openlayers_plugin.py`의 주석 한 줄 해제 + 4.0의 검증 절차 반복
+
+4. **OSM 변형 추가** — HOT, CyclOSM, OpenTopoMap
+
+5. **`osm_icon.png` + `resources_rc` 재빌드** — Qt6 호환 출력 (현재는 `openlayers.png` 재활용)
+
+6. **OpenLayers Overview dock 재구현** (선택) — `QgsMapCanvas` 기반 mini-map. 또는 영구 제거 확정
+
+---
+
+## 부록 A — 핫픽스에서 배운 Qt6 호환성 체크리스트
+
+향후 유사 마이그레이션에서 사전 검증해야 할 패턴:
+
+```bash
+# (1) PyQt5 하드코딩 (pyrcc/pyuic 자동생성 파일)
+grep -rn "^from PyQt5\|^import PyQt5" --include='*.py' .
+
+# (2) Qt enum short alias (PyQt6 거부)
+grep -rnE "Qt\.(AlignCenter|AlignLeft|AlignRight|Horizontal|Vertical|\
+LinksAccessibleByMouse|TextSelectableByMouse|TextBrowserInteraction|\
+KeepAspectRatio|SmoothTransformation|Unchecked|Checked|WaitCursor)\b" \
+  --include='*.py' .
+
+# (3) QImage.Format_* (qualified Format. 필요)
+grep -rn "QImage\.Format_" --include='*.py' .
+
+# (4) QDialogButtonBox.<Button> (StandardButton 필요)
+grep -rnE "QDialogButtonBox\.(Ok|Cancel|Close|Yes|No|Apply|Reset|Help)\b" \
+  --include='*.py' .
+
+# (5) QtWebKit / QtWebKitWidgets (Qt6에 없음)
+grep -rn "QtWebKit" --include='*.py' .
+
+# (6) Deprecated QGIS API
+grep -rn "createFromProj4\|QgsMessageLog\.\(INFO\|WARNING\|CRITICAL\)\|\
+QgsCoordinateTransform\.ForwardTransform\|Qgis\.MessageLevel(" \
+  --include='*.py' .
+```
+
+위 6개 모두 zero hit이어야 Qt6 빌드에서 안전.
+
+## 부록 B — 빌드 명령
+
+```bash
+python -c "
+import zipfile, os
+src='tmsforkorea'
+out='latest-binary/tmsforkorea-<VERSION>.zip'
+EXCLUDE_FILES={'tmsforkorea-3.0.5.zip'}
+EXCLUDE_DIRS={'__pycache__'}
+EXCLUDE_EXTS={'.pyc','.pyo'}
+with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as zf:
+    for root,dirs,files in os.walk(src):
+        dirs[:]=[d for d in dirs if d not in EXCLUDE_DIRS]
+        for f in files:
+            if f in EXCLUDE_FILES or os.path.splitext(f)[1].lower() in EXCLUDE_EXTS: continue
+            full=os.path.join(root,f)
+            zf.write(full, os.path.relpath(full).replace(os.sep,'/'))
+"
+```
+
+## 부록 C — 관련 commit 해시
+
+| 마일스톤 | merge commit |
+|---|---|
+| README 마이그레이션 노티스 | `9a9d60c` |
+| Phase 0 import-fix | `2d8a33d` |
+| Phase 0 api-fixes | `1463cfe` |
+| Phase 1 readXml 가드 | `6023b41` |
+| Phase 1 bundle (Naver+OSM+URL인코딩) | `3e07eaf` |
+| Phase 1 release-prep (beta1) | `4ee0300` |
+| beta2 PyQt5 hotfix | `365e14d` |
+| beta3 Qt6 enum hotfix | `fdc8310` |
+| **v4.0.0 final** | `be16a8b` |

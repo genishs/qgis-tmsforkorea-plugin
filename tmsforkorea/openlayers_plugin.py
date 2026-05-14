@@ -31,7 +31,6 @@ from qgis.core import (QgsCoordinateTransform, Qgis, QgsProject,
 
 from . import resources_rc
 from .about_dialog import AboutDialog
-from .openlayers_overview import OLOverview
 from .openlayers_layer import OpenlayersLayer
 from .openlayers_plugin_layer_type import OpenlayersPluginLayerType
 from .weblayers.weblayer_registry import WebLayerTypeRegistry
@@ -40,35 +39,6 @@ from .weblayers.vworld_maps import (OlVWorldStreetLayer,
                                     OlVWorldSatelliteLayer,
                                     OlVWorldGrayLayer,
                                     OlVWorldHybridLayer)
-
-from .weblayers.daum_maps import (OlDaumStreetLayer,
-                                  OlDaumHybridLayer,
-                                  OlDaumSatelliteLayer,
-                                  OlDaumPhysicalLayer,
-                                  OlDaumCadstralLayer)
-
-from .weblayers.naver_maps import (OlNaverStreetLayer,
-                                   OlNaverHybridLayer,
-                                   OlNaverSatelliteLayer,
-                                   OlNaverPhysicalLayer,
-                                   OlNaverCadastralLayer)
-
-from .weblayers.naver_maps_old import (OlNaverStreet5179Layer,
-                                   OlNaverHybrid5179Layer,
-                                   OlNaverSatellite5179Layer,
-                                   OlNaverPhysical5179Layer,
-                                   OlNaverCadastral5179Layer)
-
-from .weblayers.ngii_maps import (OlNgiiStreetLayer,
-                                  OlNgiiBlankLayer,
-                                  OlNgiiEnglishLayer,
-                                  OlNgiiHighDensityLayer,
-                                  OlNgiiColorBlindLayer)
-
-from .weblayers.mango_maps import (OlMangoBaseMapLayer,
-                                   OlMangoBaseMapGrayLayer,
-                                   OlMangoHiDPIMapLayer,
-                                   OlMangoHiDPIMapGrayLayer)
 
 import os.path
 import time
@@ -97,7 +67,6 @@ class OpenlayersPlugin:
                 QCoreApplication.installTranslator(self.translator)
 
         self._olLayerTypeRegistry = WebLayerTypeRegistry(self)
-        self.olOverview = OLOverview(iface, self._olLayerTypeRegistry)
         self.dlgAbout = AboutDialog()
         self.pluginLayerRegistry = QgsPluginLayerRegistry()
 
@@ -105,31 +74,24 @@ class OpenlayersPlugin:
         self._olMenu = QMenu("TMS for Korea")
         self._olMenu.setIcon(QIcon(":/plugins/openlayers/openlayers.png"))
 
-        # Overview
-        self.overviewAddAction = QAction(QApplication.translate("OpenlayersPlugin", "OpenLayers Overview"), self.iface.mainWindow())
-        self.overviewAddAction.setCheckable(True)
-        self.overviewAddAction.setChecked(False)
-        self.overviewAddAction.toggled.connect(self.olOverview.setVisible)
-        self._olMenu.addAction(self.overviewAddAction)
-
         self._actionAbout = QAction(QApplication.translate("dlgAbout", "About OpenLayers Plugin"), self.iface.mainWindow())
         self._actionAbout.triggered.connect(self.dlgAbout.show)
         self._olMenu.addAction(self._actionAbout)
         self.dlgAbout.finished.connect(self._publicationInfoClosed)
 
-        # Kakao Maps - 5181
-        self._olLayerTypeRegistry.register(OlDaumStreetLayer())
-        self._olLayerTypeRegistry.register(OlDaumHybridLayer())
-        self._olLayerTypeRegistry.register(OlDaumSatelliteLayer())
-        self._olLayerTypeRegistry.register(OlDaumPhysicalLayer())
-        self._olLayerTypeRegistry.register(OlDaumCadstralLayer())
+        # Kakao Maps - 5181 (disabled: WebKit-dependent, pending QGIS 4.x port)
+        # self._olLayerTypeRegistry.register(OlDaumStreetLayer())
+        # self._olLayerTypeRegistry.register(OlDaumHybridLayer())
+        # self._olLayerTypeRegistry.register(OlDaumSatelliteLayer())
+        # self._olLayerTypeRegistry.register(OlDaumPhysicalLayer())
+        # self._olLayerTypeRegistry.register(OlDaumCadstralLayer())
 
-        # Naver Maps - 3857(New)
-        self._olLayerTypeRegistry.register(OlNaverStreetLayer())
-        self._olLayerTypeRegistry.register(OlNaverHybridLayer())
-        self._olLayerTypeRegistry.register(OlNaverSatelliteLayer())
-        self._olLayerTypeRegistry.register(OlNaverPhysicalLayer())
-        self._olLayerTypeRegistry.register(OlNaverCadastralLayer())
+        # Naver Maps - 3857(New) (disabled: WebKit-dependent, pending QGIS 4.x port)
+        # self._olLayerTypeRegistry.register(OlNaverStreetLayer())
+        # self._olLayerTypeRegistry.register(OlNaverHybridLayer())
+        # self._olLayerTypeRegistry.register(OlNaverSatelliteLayer())
+        # self._olLayerTypeRegistry.register(OlNaverPhysicalLayer())
+        # self._olLayerTypeRegistry.register(OlNaverCadastralLayer())
 
         # Naver Maps - 5179(Old)
         #self._olLayerTypeRegistry.register(OlNaverStreet5179Layer())
@@ -181,9 +143,6 @@ class OpenlayersPlugin:
 
     def unload(self):
         self.iface.webMenu().removeAction(self._olMenu.menuAction())
-
-        self.olOverview.setVisible(False)
-        del self.olOverview
 
         # Unregister plugin layer type
         self.pluginLayerRegistry.removePluginLayerType(

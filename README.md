@@ -13,11 +13,13 @@ TMS for Korea
 QGIS TMS Plugin for Korean users
 ------------------------------
  - VWorld(Street, Gray, Satellite, Hybrid) Maps
- - Naver(Street, Hybrid, Satellite, Physical) Maps — Cadastral deferred to 4.1
+ - Naver(Street, Hybrid, Satellite, Physical, Cadastral) Maps
  - OpenStreetMap Standard
- - Kakao(Daum), NGII — deferred to 4.1+ (Qt6 has no QtWebKit; restoring these
-   needs the GDAL TMS minidriver for EPSG:5181/5179)
- - Mango — upstream server unreachable as of 2026-05-14
+ - Kakao(Daum) — unavailable: Kakao blocks direct tile access since 2025-10-20 (App Key + SDK only)
+ - NGII — deferred (custom EPSG:5179 tile scheme, needs GDAL TMS work)
+ - Google Maps — out of scope (ToS requires session-token API + billing)
+ - Bing Maps — out of scope (program closed to new keys since 2024-06-30)
+ - Mango — upstream server unreachable
 
 
 Migration record

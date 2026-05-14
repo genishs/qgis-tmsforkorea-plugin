@@ -1,12 +1,12 @@
 [general]
 name=TMS for Korea
 qgisMinimumVersion=4.0
-description=QGIS plugin. VWorld, Naver, OpenStreetMap Map Layers for Korean users (QGIS 4.x port; Kakao/NGII return in a future release)
-about=QGIS plugin. VWorld, Naver, OpenStreetMap Map Layers for Korean users (QGIS 4.x port; Kakao/NGII return in a future release)
-version=4.0.0
+description=QGIS plugin. VWorld, Naver (incl. Cadastral), OpenStreetMap Map Layers for Korean users (QGIS 4.x port; Kakao/NGII unavailable due to upstream policy)
+about=QGIS plugin. VWorld, Naver (incl. Cadastral), OpenStreetMap Map Layers for Korean users (QGIS 4.x port; Kakao/NGII unavailable due to upstream policy)
+version=4.0.1
 
 # tags are comma separated with spaces allowed
-tags=openlayers, vworld, naver, openstreetmap, osm
+tags=openlayers, vworld, naver, openstreetmap, osm, cadastral
 
 homepage=https://github.com/mangosystem/qgis-tmsforkorea-plugin
 tracker=https://github.com/mangosystem/qgis-tmsforkorea-plugin
@@ -25,6 +25,23 @@ email=mapplus@gmail.com
 
 # Uncomment the following line and add your changelog entries:
 changelog=
+    4.0.1
+        - Fix: Naver tile URIs not rendering on QGIS 4. Previous build
+          aggressively percent-encoded the URL template (?, &, =, @ etc.)
+          inside the XYZ URI; some QGIS 4 builds did not decode it back
+          before substituting {z}/{x}/{y}, producing malformed tile
+          requests. URI now mirrors QGIS's own xyz-connection dialog
+          format (type=xyz first, raw URL template, only '&' encoded).
+        - Add: Naver Cadastral layer is now registered (was deferred
+          from 4.0.0 release scope).
+        - Add: every TMS layer-add is now logged to "Log Messages >
+          TMS for Korea" with the URL template, full URI, and validity
+          status. Invalid layers also push a message-bar warning.
+        - Phase 2 research: Kakao, Google, Bing all deferred indefinitely
+          due to upstream policy (Kakao tile API blocked since 2025-10-20,
+          Google Maps ToS requires session-token API + billing, Bing Maps
+          for Enterprise closed to new keys since 2024-06-30). See
+          MIGRATION.md for full notes.
     4.0.0
         - First stable release for QGIS 4.x (Qt6). Verified loading and
           tile rendering on QGIS 4.0.1 (Norrkoping).

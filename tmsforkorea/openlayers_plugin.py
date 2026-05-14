@@ -195,7 +195,7 @@ class OpenlayersPlugin:
         mapCanvas.freeze(False)
         try:
             coordTrans = QgsCoordinateTransform(sourceCRS, targetCRS, QgsProject.instance())
-            mapExtent = coordTrans.transform(mapExtent, QgsCoordinateTransform.ForwardTransform)
+            mapExtent = coordTrans.transform(mapExtent, Qgis.TransformDirection.Forward)
             mapCanvas.setExtent(mapExtent)
         except:
             pass
@@ -341,9 +341,9 @@ class OpenlayersPlugin:
 
                     msg = "Updated layer '%s' from old OpenLayers Plugin version" % newLayer.name()
                     self.iface.messageBar().pushMessage(
-                        "OpenLayers Plugin", msg, level=Qgis.MessageLevel(0))
+                        "OpenLayers Plugin", msg, level=Qgis.MessageLevel.Info)
                     QgsMessageLog.logMessage(
-                        msg, "OpenLayers Plugin", QgsMessageLog.INFO)
+                        msg, "OpenLayers Plugin", Qgis.MessageLevel.Info)
 
                     # layer replaced
                     return True

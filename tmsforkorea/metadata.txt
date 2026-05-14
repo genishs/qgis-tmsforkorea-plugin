@@ -1,12 +1,12 @@
 [general]
 name=TMS for Korea
-qgisMinimumVersion=3.16.0
-description=QGIS plugin. Kakao(Daum), Naver, VWorld, NGII Map Layers for Korean users
-about=QGIS plugin. Kakao(Daum), Naver, VWorld, NGII Map Layers for Korean users
-version=3.0.5
+qgisMinimumVersion=4.0
+description=QGIS plugin. VWorld Map Layers for Korean users (QGIS 4.x port; Kakao/Naver/NGII return in 4.1)
+about=QGIS plugin. VWorld Map Layers for Korean users (QGIS 4.x port; Kakao/Naver/NGII return in 4.1)
+version=4.0.0
 
 # tags are comma separated with spaces allowed
-tags=openlayers, kakao, naver, vworld, ngii
+tags=openlayers, vworld
 
 homepage=https://github.com/mangosystem/qgis-tmsforkorea-plugin
 tracker=https://github.com/mangosystem/qgis-tmsforkorea-plugin
@@ -25,6 +25,11 @@ email=mapplus@gmail.com
 
 # Uncomment the following line and add your changelog entries:
 changelog=
+    4.0.0
+        - First release for QGIS 4.x (Qt6)
+        - Removed legacy QtWebKit-based renderer and OpenLayers Overview dock
+        - Temporarily disabled Kakao, Naver, NGII, Mango providers (returning in 4.1)
+        - VWorld layers remain functional as XYZ tile sources
     3.0.5
         - Update VWorld, Kakao, Naver Maps (2022/05/19)
     3.0.4

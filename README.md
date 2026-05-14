@@ -20,6 +20,11 @@ QGIS TMS Plugin for Korean users
  - Mango — upstream server unreachable as of 2026-05-14
 
 
+Migration record
+------------------------------
+ - 3.x → 4.x 포팅 전체 기록: [MIGRATION.md](MIGRATION.md) — 목적, 계획, 단계별 실행 로그, 핫픽스, 회고, 4.1 로드맵.
+
+
 Plugins Repository
 ------------------------------
  - http://plugins.qgis.org/plugins/tmsforkorea/

@@ -224,6 +224,34 @@ push → merge → 다음 phase
 - `metadata.txt`: version=4.0.0 (beta suffix 제거), changelog 정리
 - `README.md`: 베타 notice 제거, install ZIP 안내 추가
 
+### Phase 2 — Korea 추가 지도 시도와 v4.0.1 핫픽스
+
+#### Phase 2 결정: 카카오·구글·빙 모두 deferred
+
+사용자 요청으로 Kakao, Google, Bing을 4.0.0 이후 추가 검토. 병렬 research 3개(Kakao 가능성 / Google·Bing 가능성 / Compatibility) 결과 **3종 모두 deferred**:
+
+| 후보 | 차단 사유 | 출처 |
+|---|---|---|
+| Kakao | 2025-10-20부터 Kakao가 `*.daumcdn.net` 직접 타일 액세스 차단 (App Key + 공식 SDK만 허용). GDAL TMS minidriver는 역방향 zoom을 native 지원 안 함 → 우회 불가 | [devtalk.kakao.com/t/api/146245](https://devtalk.kakao.com/t/api/146245) |
+| Google Maps | 공식 Map Tiles API는 session token + 결제 등록 필요 (정적 XYZ URI와 호환 불가). 비공식 `mt0-mt3` 엔드포인트는 ToS 3.2.4(a) 위반 | [developers.google.com/maps/documentation/tile/policies](https://developers.google.com/maps/documentation/tile/policies) |
+| Bing Maps | Bing Maps for Enterprise는 2024-06-30부터 신규 키 발급 중단, 기존 키는 2028년 만료. Azure Maps로 이전 권고 | [blogs.bing.com/maps/2025-06](https://blogs.bing.com/maps/2025-06/Bing-Maps-for-Enterprise-Basic-Account-shutdown-June-30,2025) |
+
+대안 검토: Kakao를 QtWebEngine + 공식 JS SDK로 임베드하는 방안은 Qt6에서 가능하지만 Phase 0에서 제거한 WebKit 렌더링 파이프라인을 재도입하는 격이라 4.0 마이그레이션 취지에 반함. Azure Maps는 별도 phase로 처리할 가치 있음.
+
+#### `4.x/hotfix-4.0.1-naver` (메인 세션 → 머지 `bfe35df`, 태그 `v4.0.1`)
+
+사용자 보고: v4.0.0에서 Naver 레이어를 추가해도 타일이 안 보임.
+
+진단:
+- Naver discovery endpoint, 타일 URL, fallback version `1778232861` 모두 curl로 HTTP 200 + 66KB PNG 확인됨 — 업스트림은 멀쩡함
+- 가설: v4.0.0의 `quote(url, safe='')`이 URL 전체를 percent-encoding하는데, 일부 QGIS 4 빌드가 이를 다시 decode하지 않고 `{z}/{x}/{y}` substitutor로 넘김 → 결과적으로 `%7Bz%7D` placeholder가 그대로 남아 `400%402x.png%3Fmt%3D...` 같은 malformed URL을 요청 → HTTP 400
+
+조치:
+- URI 빌드를 QGIS 공식 XYZ-connection dialog 포맷에 맞춤: `type=xyz` 먼저, raw URL template, `&`만 인코딩(`%26`). `_buildXYZUri(xyzUrl, tilePixelRatio)` static helper로 분리
+- `_logXYZAttempt()` 추가 — 모든 TMS 레이어 추가 시 URL template + 전체 URI + `isValid()`를 `Log Messages > TMS for Korea`에 기록, invalid 시 message bar warning. 향후 타일 로딩 버그 보고가 actionable
+- Naver Cadastral 재등록 (Phase 1 deferred 해제)
+- Phase 2 research 요약을 metadata changelog와 README에 명시
+
 ---
 
 ## 5. 최종 결과
@@ -231,32 +259,33 @@ push → merge → 다음 phase
 ### 5.1 동작 확인 환경
 QGIS 4.0.1-Norrköping (1ccf690c) / Python 3.12.13 / PyQt6 / Windows 11
 
-### 5.2 동작하는 레이어 (9개)
+### 5.2 동작하는 레이어 (v4.0.1 기준, 10개)
 
 | 그룹 | 레이어 | CRS | 비고 |
 |---|---|---|---|
 | VWorld Maps | Street, Gray, Satellite, Hybrid | EPSG:3857 | 표준 XYZ |
-| Naver Maps v5 | Street, Hybrid, Satellite, Physical | EPSG:3857 | 동적 버전 토큰 fetch + fallback |
+| Naver Maps v5 | Street, Hybrid, Satellite, Physical, Cadastral | EPSG:3857 | 동적 버전 토큰 fetch + fallback. v4.0.1에서 URI 인코딩 수정 + Cadastral 활성화 |
 | OpenStreetMap | Standard | EPSG:3857 | 신규 추가 |
 
 ### 5.3 의식적으로 deferred
 
 | 항목 | 사유 | 후속 마일스톤 |
 |---|---|---|
-| Kakao (5종) | EPSG:5181 + 비표준 타일 스킴 | 4.1+ (GDAL TMS XML) |
-| NGII (5종) | EPSG:5179 동상 | 4.1+ |
-| Naver Cadastral | 단순 등록 누락 | 4.1 |
-| OSM 변형 (HOT, CyclOSM, OpenTopoMap) | 기본 1개만 ship | 4.1 |
-| OpenLayers Overview dock | QtWebKit 의존 | 영구 제거 또는 4.x에서 `QgsMapCanvas` 기반 재구현 후보 |
+| Kakao (5종) | **업스트림 정책 차단** (2025-10-20부터 App Key + SDK only) | 별도 phase: QtWebEngine + 공식 SDK 임베드 |
+| NGII (5종) | EPSG:5179 비표준 타일 스킴 + GDAL TMS 역방향 zoom 미지원 | 미정 |
+| Google Maps | ToS: session-token API + 결제 필요 | 미정 |
+| Bing Maps | 신규 키 발급 종료 (2024-06-30) | Azure Maps로 별도 phase |
+| OSM 변형 (HOT, CyclOSM, OpenTopoMap) | 기본 1개만 ship | 향후 |
+| OpenLayers Overview dock | QtWebKit 의존 | 영구 제거 또는 `QgsMapCanvas` 기반 재구현 |
 | Mango (4종) | 업스트림 서버 down | 서버 복귀 시 |
-| `osm_icon.png` + `resources_rc` 재빌드 | 4.0.0은 `openlayers.png` 재활용 | 4.1 |
+| `osm_icon.png` + `resources_rc` 재빌드 | `openlayers.png` 재활용 | 향후 |
 
 ### 5.4 통계
 
-- 머지된 phase 브랜치: 7개
-- 발급된 태그: `v4.0.0-beta1`, `v4.0.0-beta2`, `v4.0.0-beta3`, `v4.0.0`
-- 검증 사이클: 9회 (APPROVED 8회, REJECTED 1회 → 재시도 후 APPROVED)
-- 코드 변화: 약 -750줄 / +200줄
+- 머지된 phase 브랜치: 9개 (Phase 0 두 개 + Phase 1 두 개 + Phase 1 hotfix 두 개 + release 컷 + docs + v4.0.1 hotfix)
+- 발급된 태그: `v4.0.0-beta1`, `v4.0.0-beta2`, `v4.0.0-beta3`, `v4.0.0`, `v4.0.1`
+- 검증 사이클: 11회 (APPROVED 10회, REJECTED 1회 → 재시도 후 APPROVED)
+- 코드 변화: 약 -750줄 / +270줄
 
 ---
 
@@ -366,3 +395,5 @@ with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as zf:
 | beta2 PyQt5 hotfix | `365e14d` |
 | beta3 Qt6 enum hotfix | `fdc8310` |
 | **v4.0.0 final** | `be16a8b` |
+| docs: MIGRATION.md | `7c7d8cc` |
+| **v4.0.1 (Naver URI fix + Cadastral + 진단 로깅)** | `bfe35df` |

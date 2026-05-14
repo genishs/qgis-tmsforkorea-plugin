@@ -48,6 +48,14 @@ from .weblayers.naver_maps import (OlNaverStreetLayer,
 
 from .weblayers.osm_maps import OlOSMStandardLayer
 
+from .weblayers.azure_maps import (OlAzureRoadLayer,
+                                   OlAzureSatelliteLayer,
+                                   OlAzureHybridLayer,
+                                   OlAzureMapsLayer,
+                                   getAzureMapsKey,
+                                   setAzureMapsKey,
+                                   AZURE_MAPS_SIGNUP_URL)
+
 import os.path
 import time
 import collections
@@ -89,6 +97,41 @@ class OpenlayersPlugin:
     def _showAbout(self):
         self._getAboutDialog().show()
 
+    def _configureAzureMapsKey(self):
+        # Simple modal text prompt; equivalent UX to other QGIS plugins that
+        # require an API key (no custom QDialog needed for a single field).
+        currentKey = getAzureMapsKey()
+        prompt = (
+            "Enter your Azure Maps subscription key.\n"
+            "Free S0 tier available at:\n"
+            "  " + AZURE_MAPS_SIGNUP_URL + "\n\n"
+            "Leave blank and press OK to clear the saved key."
+        )
+        key, ok = QInputDialog.getText(
+            self.iface.mainWindow(),
+            "Azure Maps — Subscription Key",
+            prompt,
+            QLineEdit.Normal,
+            currentKey,
+        )
+        if not ok:
+            return
+        setAzureMapsKey(key.strip())
+        if key.strip():
+            self.iface.messageBar().pushMessage(
+                "TMS for Korea",
+                "Azure Maps key saved. You can now add Azure Maps layers.",
+                level=Qgis.MessageLevel.Info,
+                duration=5,
+            )
+        else:
+            self.iface.messageBar().pushMessage(
+                "TMS for Korea",
+                "Azure Maps key cleared.",
+                level=Qgis.MessageLevel.Info,
+                duration=4,
+            )
+
     def initGui(self):
         self._olMenu = QMenu("TMS for Korea")
         self._olMenu.setIcon(QIcon(":/plugins/openlayers/openlayers.png"))
@@ -96,6 +139,10 @@ class OpenlayersPlugin:
         self._actionAbout = QAction(QApplication.translate("dlgAbout", "About OpenLayers Plugin"), self.iface.mainWindow())
         self._actionAbout.triggered.connect(self._showAbout)
         self._olMenu.addAction(self._actionAbout)
+
+        self._actionAzureKey = QAction("Configure Azure Maps Key…", self.iface.mainWindow())
+        self._actionAzureKey.triggered.connect(self._configureAzureMapsKey)
+        self._olMenu.addAction(self._actionAzureKey)
 
         # Kakao Maps - 5181 (disabled: WebKit-dependent, pending QGIS 4.x port)
         # self._olLayerTypeRegistry.register(OlDaumStreetLayer())
@@ -126,6 +173,11 @@ class OpenlayersPlugin:
 
         # OpenStreetMap - 3857
         self._olLayerTypeRegistry.register(OlOSMStandardLayer())
+
+        # Azure Maps - 3857 (requires user-supplied subscription key)
+        self._olLayerTypeRegistry.register(OlAzureRoadLayer())
+        self._olLayerTypeRegistry.register(OlAzureSatelliteLayer())
+        self._olLayerTypeRegistry.register(OlAzureHybridLayer())
 
         # NGII - 5179
         #self._olLayerTypeRegistry.register(OlNgiiStreetLayer())
@@ -173,6 +225,20 @@ class OpenlayersPlugin:
         QgsProject.instance().projectSaved.disconnect(self.projectSaved)
 
     def addLayer(self, layerType):
+        # Azure Maps requires a user-supplied subscription key; bail with a
+        # friendly message bar entry instead of creating an invalid layer
+        # when the key is missing.
+        if isinstance(layerType, OlAzureMapsLayer) and not getAzureMapsKey():
+            self.iface.messageBar().pushMessage(
+                "TMS for Korea",
+                "Azure Maps subscription key not configured. "
+                "Use 'Web > TMS for Korea > Configure Azure Maps Key…' first "
+                "(free S0 tier at " + AZURE_MAPS_SIGNUP_URL + ").",
+                level=Qgis.MessageLevel.Warning,
+                duration=10,
+            )
+            return
+
         if layerType.hasXYZUrl():
             # create XYZ layer
             layer, url = self.createXYZLayer(layerType,

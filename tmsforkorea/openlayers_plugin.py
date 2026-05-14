@@ -52,7 +52,6 @@ import os.path
 import time
 import collections
 import requests
-from urllib.parse import quote
 
 
 class OpenlayersPlugin:
@@ -110,7 +109,7 @@ class OpenlayersPlugin:
         self._olLayerTypeRegistry.register(OlNaverHybridLayer())
         self._olLayerTypeRegistry.register(OlNaverSatelliteLayer())
         self._olLayerTypeRegistry.register(OlNaverPhysicalLayer())
-        # self._olLayerTypeRegistry.register(OlNaverCadastralLayer())  # DEFERRED to 4.1
+        self._olLayerTypeRegistry.register(OlNaverCadastralLayer())
 
         # Naver Maps - 5179(Old)
         #self._olLayerTypeRegistry.register(OlNaverStreet5179Layer())
@@ -269,6 +268,37 @@ class OpenlayersPlugin:
         if self._hasOlLayer():
             self._publicationInfo()
 
+    @staticmethod
+    def _buildXYZUri(xyzUrl, tilePixelRatio):
+        # Mirror the URI shape that QGIS's native XYZ connection dialog
+        # produces: type=xyz first, raw URL template, then zoom bounds.
+        # The URL template MUST stay literal so the wms/xyz provider can
+        # substitute {z}/{x}/{y} per-tile.  If the template contains '&'
+        # (multi-param query), encode only that character to keep the
+        # outer URI parseable.
+        safeUrl = xyzUrl.replace('&', '%26')
+        uri = "type=xyz&url=" + safeUrl + "&zmin=0&zmax=18"
+        if tilePixelRatio and tilePixelRatio > 0:
+            uri = uri + "&tilePixelRatio=" + str(tilePixelRatio)
+        return uri
+
+    def _logXYZAttempt(self, layerName, xyzUrl, uri, layer):
+        # Surface enough information for the user (and for bug reports)
+        # to understand exactly what the plugin asked QGIS to fetch and
+        # whether QGIS accepted the layer as valid.
+        valid = layer.isValid() if layer is not None else False
+        msg = (
+            "Adding XYZ layer '%s'\n  url template: %s\n  uri: %s\n  valid: %s"
+            % (layerName, xyzUrl, uri, valid)
+        )
+        QgsMessageLog.logMessage(msg, "TMS for Korea", Qgis.MessageLevel.Info)
+        if not valid:
+            self.iface.messageBar().pushMessage(
+                "TMS for Korea",
+                "Layer '%s' is invalid; check Log Messages > TMS for Korea." % layerName,
+                level=Qgis.MessageLevel.Warning,
+            )
+
     def createXYZLayer(self, layerType, name):
         # create XYZ layer with tms url as uri
         provider = "wms"
@@ -290,17 +320,20 @@ class OpenlayersPlugin:
             for xyzUrl in xyzUrls:
                 tmsLayerName = layerName;
 
-                # https://github.com/qgis/QGIS/blob/master/src/providers/wms/qgsxyzconnectiondialog.cpp
-
-                uri = "url=" + quote(xyzUrl, safe='') + "&zmax=18&zmin=0&type=xyz"
-                if (tilePixelRatio > 0):
-                    uri = uri + "&tilePixelRatio=" + str(tilePixelRatio)
+                # URI format matches QGIS's own qgsxyzconnectiondialog.cpp:
+                # type=xyz comes first; url= holds the RAW template (the
+                # XYZ provider tolerates ?query strings; aggressive
+                # percent-encoding hides the URL from the substitutor and
+                # breaks providers like Naver that embed ?mt=... params).
+                uri = self._buildXYZUri(xyzUrl, tilePixelRatio)
 
                 if i > 0:
                     tmsLayerName = layerName + " Label"
 
                 tmsLayer = QgsRasterLayer(uri, tmsLayerName, provider, QgsRasterLayer.LayerOptions())
                 tmsLayer.setCustomProperty("ol_layer_type", tmsLayerName)
+
+                self._logXYZAttempt(tmsLayerName, xyzUrl, uri, tmsLayer)
 
                 layer.insertChildNode(0, QgsLayerTreeLayer(tmsLayer))
                 i = i + 1
@@ -314,12 +347,12 @@ class OpenlayersPlugin:
                     # add to XYT Tiles
                     self.addToXYZTiles(tmsLayerName, xyzUrl, tilePixelRatio)
         else:
-            uri = "url=" + quote(xyzUrls, safe='') + "&zmax=18&zmin=0&type=xyz"
-            if (tilePixelRatio > 0):
-                uri = uri + "&tilePixelRatio=" + str(tilePixelRatio)
+            uri = self._buildXYZUri(xyzUrls, tilePixelRatio)
 
             layer = QgsRasterLayer(uri, layerName, provider, QgsRasterLayer.LayerOptions())
             layer.setCustomProperty("ol_layer_type", layerName)
+
+            self._logXYZAttempt(layerName, xyzUrls, uri, layer)
 
             if layer.isValid():
                 QgsProject.instance().addMapLayer(layer)

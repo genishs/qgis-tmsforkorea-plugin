@@ -3,7 +3,7 @@ name=TMS for Korea
 qgisMinimumVersion=4.0
 description=QGIS plugin. VWorld, Naver, OpenStreetMap Map Layers for Korean users (QGIS 4.x port; Kakao/NGII return in a future release)
 about=QGIS plugin. VWorld, Naver, OpenStreetMap Map Layers for Korean users (QGIS 4.x port; Kakao/NGII return in a future release)
-version=4.0.0-beta1
+version=4.0.0-beta2
 
 # tags are comma separated with spaces allowed
 tags=openlayers, vworld, naver, openstreetmap, osm
@@ -25,6 +25,10 @@ email=mapplus@gmail.com
 
 # Uncomment the following line and add your changelog entries:
 changelog=
+    4.0.0-beta2
+        - Hotfix: replace hardcoded PyQt5 imports in resources_rc.py and
+          ui_about_dialog.py with qgis.PyQt so the plugin loads under Qt6.
+          Tested against QGIS 4.0.1 (Norrkoping).
     4.0.0-beta1
         - Re-enabled Naver layers (Street, Hybrid, Satellite, Physical) as XYZ tiles
           with dynamic version-token discovery against Naver's style JSON; falls

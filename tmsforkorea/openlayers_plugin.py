@@ -76,17 +76,27 @@ class OpenlayersPlugin:
                 QCoreApplication.installTranslator(self.translator)
 
         self._olLayerTypeRegistry = WebLayerTypeRegistry(self)
-        self.dlgAbout = AboutDialog()
+        # Lazy-construct the About dialog on first use so any Qt6 enum quirks
+        # in the generated ui_about_dialog.py do not block plugin load.
+        self.dlgAbout = None
         self.pluginLayerRegistry = QgsPluginLayerRegistry()
+
+    def _getAboutDialog(self):
+        if self.dlgAbout is None:
+            self.dlgAbout = AboutDialog()
+            self.dlgAbout.finished.connect(self._publicationInfoClosed)
+        return self.dlgAbout
+
+    def _showAbout(self):
+        self._getAboutDialog().show()
 
     def initGui(self):
         self._olMenu = QMenu("TMS for Korea")
         self._olMenu.setIcon(QIcon(":/plugins/openlayers/openlayers.png"))
 
         self._actionAbout = QAction(QApplication.translate("dlgAbout", "About OpenLayers Plugin"), self.iface.mainWindow())
-        self._actionAbout.triggered.connect(self.dlgAbout.show)
+        self._actionAbout.triggered.connect(self._showAbout)
         self._olMenu.addAction(self._actionAbout)
-        self.dlgAbout.finished.connect(self._publicationInfoClosed)
 
         # Kakao Maps - 5181 (disabled: WebKit-dependent, pending QGIS 4.x port)
         # self._olLayerTypeRegistry.register(OlDaumStreetLayer())
@@ -246,9 +256,9 @@ class OpenlayersPlugin:
             QSettings().setValue("Plugin-OpenLayers/cloud_info_ts", lastInfo)
         days = (now-lastInfo)/day
         if days >= 30 and not cloud_info_off:
-            self.dlgAbout.tabWidget.setCurrentWidget(
-                self.dlgAbout.tab_publishing)
-            self.dlgAbout.show()
+            dlg = self._getAboutDialog()
+            dlg.tabWidget.setCurrentWidget(dlg.tab_publishing)
+            dlg.show()
             QSettings().setValue("Plugin-OpenLayers/cloud_info_ts", now)
 
     def _publicationInfoClosed(self):

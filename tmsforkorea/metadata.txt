@@ -1,12 +1,12 @@
 [general]
 name=TMS for Korea
 qgisMinimumVersion=4.0
-description=QGIS plugin. VWorld, Naver (incl. Cadastral), OpenStreetMap Map Layers for Korean users (QGIS 4.x port; Kakao/NGII unavailable due to upstream policy)
-about=QGIS plugin. VWorld, Naver (incl. Cadastral), OpenStreetMap Map Layers for Korean users (QGIS 4.x port; Kakao/NGII unavailable due to upstream policy)
-version=4.0.1
+description=QGIS plugin. VWorld, Naver, OpenStreetMap, Azure Maps for Korean / global users (QGIS 4.x. Azure Maps requires a user-supplied subscription key)
+about=QGIS plugin. VWorld, Naver, OpenStreetMap, Azure Maps for Korean / global users (QGIS 4.x. Azure Maps requires a user-supplied subscription key)
+version=4.1.0
 
 # tags are comma separated with spaces allowed
-tags=openlayers, vworld, naver, openstreetmap, osm, cadastral
+tags=openlayers, vworld, naver, openstreetmap, osm, cadastral, azure, azure maps
 
 homepage=https://github.com/mangosystem/qgis-tmsforkorea-plugin
 tracker=https://github.com/mangosystem/qgis-tmsforkorea-plugin
@@ -25,6 +25,20 @@ email=mapplus@gmail.com
 
 # Uncomment the following line and add your changelog entries:
 changelog=
+    4.1.0
+        - Add: Azure Maps (Road, Satellite, Hybrid) via the official
+          v2024-04-01 tile API. Requires a user-supplied subscription
+          key — configure via "Web > TMS for Korea > Configure Azure
+          Maps Key...". Free S0 tier covers casual map browsing
+          (azure.microsoft.com/products/azure-maps).
+        - Add: when an Azure layer is requested without a key configured,
+          the menu action shows a message-bar hint instead of attempting
+          an inevitable 401 response.
+        - The Azure subscription key is read on each layer-add from
+          QSettings, so a key entered after plugin load takes effect
+          without restarting QGIS.
+        - URL builder verified to round-trip multi-parameter URLs
+          (Azure has 5 inner '&' chars) through QGIS's xyz URI parser.
     4.0.1
         - Fix: Naver tile URIs not rendering on QGIS 4. Previous build
           aggressively percent-encoded the URL template (?, &, =, @ etc.)

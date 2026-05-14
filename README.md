@@ -15,10 +15,13 @@ QGIS TMS Plugin for Korean users
  - VWorld(Street, Gray, Satellite, Hybrid) Maps
  - Naver(Street, Hybrid, Satellite, Physical, Cadastral) Maps
  - OpenStreetMap Standard
+ - Azure Maps (Road, Satellite, Hybrid) — requires user-supplied subscription key.
+   Free S0 tier at https://azure.microsoft.com/products/azure-maps . Configure via
+   `Web → TMS for Korea → Configure Azure Maps Key…`
  - Kakao(Daum) — unavailable: Kakao blocks direct tile access since 2025-10-20 (App Key + SDK only)
  - NGII — deferred (custom EPSG:5179 tile scheme, needs GDAL TMS work)
  - Google Maps — out of scope (ToS requires session-token API + billing)
- - Bing Maps — out of scope (program closed to new keys since 2024-06-30)
+ - Bing Maps — replaced by Azure Maps (Bing program closed to new keys 2024-06-30)
  - Mango — upstream server unreachable
 
 

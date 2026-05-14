@@ -40,10 +40,19 @@ from .weblayers.vworld_maps import (OlVWorldStreetLayer,
                                     OlVWorldGrayLayer,
                                     OlVWorldHybridLayer)
 
+from .weblayers.naver_maps import (OlNaverStreetLayer,
+                                   OlNaverHybridLayer,
+                                   OlNaverSatelliteLayer,
+                                   OlNaverPhysicalLayer,
+                                   OlNaverCadastralLayer)
+
+from .weblayers.osm_maps import OlOSMStandardLayer
+
 import os.path
 import time
 import collections
 import requests
+from urllib.parse import quote
 
 
 class OpenlayersPlugin:
@@ -86,12 +95,12 @@ class OpenlayersPlugin:
         # self._olLayerTypeRegistry.register(OlDaumPhysicalLayer())
         # self._olLayerTypeRegistry.register(OlDaumCadstralLayer())
 
-        # Naver Maps - 3857(New) (disabled: WebKit-dependent, pending QGIS 4.x port)
-        # self._olLayerTypeRegistry.register(OlNaverStreetLayer())
-        # self._olLayerTypeRegistry.register(OlNaverHybridLayer())
-        # self._olLayerTypeRegistry.register(OlNaverSatelliteLayer())
-        # self._olLayerTypeRegistry.register(OlNaverPhysicalLayer())
-        # self._olLayerTypeRegistry.register(OlNaverCadastralLayer())
+        # Naver Maps - 3857(New)
+        self._olLayerTypeRegistry.register(OlNaverStreetLayer())
+        self._olLayerTypeRegistry.register(OlNaverHybridLayer())
+        self._olLayerTypeRegistry.register(OlNaverSatelliteLayer())
+        self._olLayerTypeRegistry.register(OlNaverPhysicalLayer())
+        # self._olLayerTypeRegistry.register(OlNaverCadastralLayer())  # DEFERRED to 4.1
 
         # Naver Maps - 5179(Old)
         #self._olLayerTypeRegistry.register(OlNaverStreet5179Layer())
@@ -105,6 +114,9 @@ class OpenlayersPlugin:
         self._olLayerTypeRegistry.register(OlVWorldSatelliteLayer())
         self._olLayerTypeRegistry.register(OlVWorldGrayLayer())
         self._olLayerTypeRegistry.register(OlVWorldHybridLayer())
+
+        # OpenStreetMap - 3857
+        self._olLayerTypeRegistry.register(OlOSMStandardLayer())
 
         # NGII - 5179
         #self._olLayerTypeRegistry.register(OlNgiiStreetLayer())
@@ -270,7 +282,7 @@ class OpenlayersPlugin:
 
                 # https://github.com/qgis/QGIS/blob/master/src/providers/wms/qgsxyzconnectiondialog.cpp
 
-                uri = "url=" + xyzUrl + "&zmax=18&zmin=0&type=xyz"
+                uri = "url=" + quote(xyzUrl, safe='') + "&zmax=18&zmin=0&type=xyz"
                 if (tilePixelRatio > 0):
                     uri = uri + "&tilePixelRatio=" + str(tilePixelRatio)
 
@@ -292,7 +304,7 @@ class OpenlayersPlugin:
                     # add to XYT Tiles
                     self.addToXYZTiles(tmsLayerName, xyzUrl, tilePixelRatio)
         else:
-            uri = "url=" + xyzUrls + "&zmax=18&zmin=0&type=xyz"
+            uri = "url=" + quote(xyzUrls, safe='') + "&zmax=18&zmin=0&type=xyz"
             if (tilePixelRatio > 0):
                 uri = uri + "&tilePixelRatio=" + str(tilePixelRatio)
 

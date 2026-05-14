@@ -1,6 +1,11 @@
 TMS for Korea
 =======================
 
+> **Notice — QGIS 4.x migration in progress (branch `4.x/main`)**
+> This branch ports the plugin to QGIS 4.0 (Qt6). The legacy WebKit-based renderer
+> (used by Kakao/Naver/NGII layers) is being replaced with XYZ/GDAL tile providers.
+> The `master` branch remains the stable QGIS 3.x release line.
+
 
 QGIS TMS Plugin for Korean users
 ------------------------------

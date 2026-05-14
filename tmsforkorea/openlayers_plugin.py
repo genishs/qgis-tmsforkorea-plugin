@@ -46,6 +46,8 @@ from .weblayers.naver_maps import (OlNaverStreetLayer,
                                    OlNaverPhysicalLayer,
                                    OlNaverCadastralLayer)
 
+from .weblayers.osm_maps import OlOSMStandardLayer
+
 import os.path
 import time
 import collections
@@ -113,7 +115,7 @@ class OpenlayersPlugin:
         self._olLayerTypeRegistry.register(OlVWorldGrayLayer())
         self._olLayerTypeRegistry.register(OlVWorldHybridLayer())
 
-        # OpenStreetMap
+        # OpenStreetMap - 3857
         self._olLayerTypeRegistry.register(OlOSMStandardLayer())
 
         # NGII - 5179

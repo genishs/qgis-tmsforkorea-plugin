@@ -1,18 +1,19 @@
 TMS for Korea
 =======================
 
-> **Notice — QGIS 4.x migration in progress (branch `4.x/main`)**
-> This branch ports the plugin to QGIS 4.0 (Qt6). The legacy WebKit-based renderer
-> (used by Kakao/Naver/NGII layers) is being replaced with XYZ/GDAL tile providers.
-> The `master` branch remains the stable QGIS 3.x release line.
+> **QGIS 4.x branch (`4.x/main`) — v4.0.0-beta1**
+> This branch ports the plugin to QGIS 4.0 (Qt6). The legacy WebKit-based
+> renderer has been replaced with XYZ tile providers. The `master` branch
+> remains the stable QGIS 3.x release line.
 
 
 QGIS TMS Plugin for Korean users
 ------------------------------
- - Daum(Street, Satellite, Hybrid, Physical, Cadstral) Maps
- - Naver(Street, Satellite, Hybrid, Physical, Cadstral) Maps
  - VWorld(Street, Gray, Satellite, Hybrid) Maps
- - NGII(Street, Blank, Color-Blind, High-Density, English Version)
+ - Naver(Street, Hybrid, Satellite, Physical) Maps — Cadastral deferred
+ - OpenStreetMap Standard
+ - Kakao(Daum), NGII — temporarily unavailable in 4.x (Qt6 has no QtWebKit;
+   restoring these requires the GDAL TMS minidriver for EPSG:5181/5179 — planned)
 
 
 Plugins Repository

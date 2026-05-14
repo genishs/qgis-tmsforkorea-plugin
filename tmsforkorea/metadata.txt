@@ -3,7 +3,7 @@ name=TMS for Korea
 qgisMinimumVersion=4.0
 description=QGIS plugin. VWorld, Naver, OpenStreetMap Map Layers for Korean users (QGIS 4.x port; Kakao/NGII return in a future release)
 about=QGIS plugin. VWorld, Naver, OpenStreetMap Map Layers for Korean users (QGIS 4.x port; Kakao/NGII return in a future release)
-version=4.0.0-beta3
+version=4.0.0
 
 # tags are comma separated with spaces allowed
 tags=openlayers, vworld, naver, openstreetmap, osm
@@ -25,6 +25,21 @@ email=mapplus@gmail.com
 
 # Uncomment the following line and add your changelog entries:
 changelog=
+    4.0.0
+        - First stable release for QGIS 4.x (Qt6). Verified loading and
+          tile rendering on QGIS 4.0.1 (Norrkoping).
+        - Working layers: VWorld (Street/Gray/Satellite/Hybrid), Naver v5
+          (Street/Hybrid/Satellite/Physical) via XYZ tiles with dynamic
+          version-token discovery, OpenStreetMap Standard.
+        - Removed legacy QtWebKit-based renderer and OpenLayers Overview
+          dock (Qt6 has no QtWebKit).
+        - Hardened readXml so legacy 3.x projects containing Kakao/NGII
+          layers degrade gracefully instead of crashing.
+        - About dialog uses lazy construction and Qt6-compatible enum
+          spellings; pyrcc/pyuic generated files migrated to qgis.PyQt.
+        - Kakao, NGII, Mango deferred to a future release (4.1+);
+          Kakao/NGII require GDAL TMS minidriver work for their
+          custom CRS tile schemes, Mango upstream is unreachable.
     4.0.0-beta3
         - Hotfix: Qt6 enum compatibility in ui_about_dialog.py
           (Qt.AlignCenter -> Qt.AlignmentFlag.AlignCenter,

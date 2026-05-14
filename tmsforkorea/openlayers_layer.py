@@ -191,7 +191,7 @@ class OpenlayersController(QObject):
         olSize = QSize(int(olWidth), int(olHeight))
         self.page.setViewportSize(olSize)
         self.page.mainFrame().evaluateJavaScript("map.updateSize();")
-        self.img = QImage(olSize, QImage.Format_ARGB32_Premultiplied)
+        self.img = QImage(olSize, QImage.Format.Format_ARGB32_Premultiplied)
 
         self.page.extent = rendererContext.extent()
         debug("map.zoomToExtent (%f, %f, %f, %f)" % (
@@ -260,8 +260,8 @@ class OpenlayersController(QObject):
                 self.img.width(), self.img.height(),
                   targetWidth, targetHeight), 3)
             self.img = self.img.scaled(targetWidth, targetHeight,
-                                       Qt.KeepAspectRatio,
-                                       Qt.SmoothTransformation)
+                                       Qt.AspectRatioMode.KeepAspectRatio,
+                                       Qt.TransformationMode.SmoothTransformation)
 
         # save current state
         self.page.lastExtent = rendererContext.extent()

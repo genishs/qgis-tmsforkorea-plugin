@@ -374,9 +374,9 @@ class OpenlayersLayer(QgsPluginLayer):
             msg = "Obsolete or unknown layer type '%s', using OpenStreetMap\
              instead" % ol_layer_type_name
             self.iface.messageBar().pushMessage("OpenLayers Plugin", msg,
-                                                level=Qgis.MessageLevel(1))
+                                                level=Qgis.MessageLevel.Warning)
             QgsMessageLog.logMessage(msg, "OpenLayers Plugin",
-                                     QgsMessageLog.WARNING)
+                                     Qgis.MessageLevel.Warning)
 
         return True
 

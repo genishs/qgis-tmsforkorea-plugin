@@ -47,7 +47,7 @@ class WebLayerDaum5181(WebLayer):
         if not createCrs:
             proj_def =  "+proj=tmerc +lat_0=38 +lon_0=127 +k=1 +x_0=200000 +y_0=500000 +ellps=GRS80 "
             proj_def += "+towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
-            isOk = coordRefSys.createFromProj4(proj_def)
+            isOk = coordRefSys.createFromProj(proj_def)
             if not isOk:
                 return None
         return coordRefSys

@@ -1,12 +1,12 @@
 [general]
 name=TMS for Korea
 qgisMinimumVersion=4.0
-description=QGIS plugin. VWorld Map Layers for Korean users (QGIS 4.x port; Kakao/Naver/NGII return in 4.1)
-about=QGIS plugin. VWorld Map Layers for Korean users (QGIS 4.x port; Kakao/Naver/NGII return in 4.1)
-version=4.0.0
+description=QGIS plugin. VWorld, Naver, OpenStreetMap Map Layers for Korean users (QGIS 4.x port; Kakao/NGII return in a future release)
+about=QGIS plugin. VWorld, Naver, OpenStreetMap Map Layers for Korean users (QGIS 4.x port; Kakao/NGII return in a future release)
+version=4.0.0-beta1
 
 # tags are comma separated with spaces allowed
-tags=openlayers, vworld
+tags=openlayers, vworld, naver, openstreetmap, osm
 
 homepage=https://github.com/mangosystem/qgis-tmsforkorea-plugin
 tracker=https://github.com/mangosystem/qgis-tmsforkorea-plugin
@@ -25,11 +25,22 @@ email=mapplus@gmail.com
 
 # Uncomment the following line and add your changelog entries:
 changelog=
-    4.0.0
+    4.0.0-beta1
+        - Re-enabled Naver layers (Street, Hybrid, Satellite, Physical) as XYZ tiles
+          with dynamic version-token discovery against Naver's style JSON; falls
+          back to a known-good token if discovery fails. Cadastral deferred.
+        - Added OpenStreetMap Standard layer
+        - Fixed XYZ URI percent-encoding so tile URLs containing query strings
+          (e.g. Naver's ?mt=...) are parsed correctly by the QGIS WMS provider
+        - Hardened readXml against missing OSM fallback so 3.x projects with
+          orphan Kakao/NGII layers degrade gracefully instead of crashing
+        - Mango still unavailable (upstream server unreachable as of 2026-05-14)
+    4.0.0-alpha1
         - First release for QGIS 4.x (Qt6)
         - Removed legacy QtWebKit-based renderer and OpenLayers Overview dock
-        - Temporarily disabled Kakao, Naver, NGII, Mango providers (returning in 4.1)
-        - VWorld layers remain functional as XYZ tile sources
+        - VWorld layers functional as XYZ tile sources
+        - Kakao, NGII deferred to a future release pending GDAL TMS minidriver
+          support for EPSG:5181 / EPSG:5179 tile schemes
     3.0.5
         - Update VWorld, Kakao, Naver Maps (2022/05/19)
     3.0.4

@@ -66,8 +66,8 @@ def _resolveNaverVersion(style):
 
 class OlNaverMapsLayer(WebLayer3857):
 
-    # Group in menu
-    groupName = 'Naver Maps v5'
+    # Group in menu (displayed label — Korean)
+    groupName = '네이버 지도 v5'
 
     # Group icon in menu
     groupIcon = 'naver_icon.png'
@@ -87,9 +87,10 @@ class OlNaverMapsLayer(WebLayer3857):
 
     emitsLoadEnd = False
 
-    def __init__(self, name, html, xyzUrl, tilePixelRatio=2):
+    def __init__(self, name, html, xyzUrl, tilePixelRatio=2, displayName=None):
         WebLayer3857.__init__(self, groupName=self.groupName, groupIcon=self.groupIcon,
-                              name=name, html=html, xyzUrl=xyzUrl, tilePixelRatio=tilePixelRatio)
+                              name=name, html=html, xyzUrl=xyzUrl, tilePixelRatio=tilePixelRatio,
+                              displayName=displayName)
 
 
 class OlNaverStreetLayer(OlNaverMapsLayer):
@@ -98,7 +99,8 @@ class OlNaverStreetLayer(OlNaverMapsLayer):
     def __init__(self):
         version = _resolveNaverVersion("basic")
         tmsUrl = f"https://map.pstatic.net/nrb/styles/basic/{version}/{{z}}/{{x}}/{{y}}@2x.png?mt=bg.ol.ts.lko"
-        OlNaverMapsLayer.__init__(self, name="Naver Street", html="naver_street.html", xyzUrl=tmsUrl)
+        OlNaverMapsLayer.__init__(self, name="Naver Street", html="naver_street.html", xyzUrl=tmsUrl,
+                                  displayName="네이버 일반지도")
 
 
 class OlNaverHybridLayer(OlNaverMapsLayer):
@@ -107,7 +109,8 @@ class OlNaverHybridLayer(OlNaverMapsLayer):
     def __init__(self):
         version = _resolveNaverVersion("satellite")
         tmsUrl = f"https://map.pstatic.net/nrb/styles/satellite/{version}/{{z}}/{{x}}/{{y}}@2x.png?mt=bg.ol.ts.lko"
-        OlNaverMapsLayer.__init__(self, name="Naver Hybrid", html="naver_hybrid.html", xyzUrl=tmsUrl)
+        OlNaverMapsLayer.__init__(self, name="Naver Hybrid", html="naver_hybrid.html", xyzUrl=tmsUrl,
+                                  displayName="네이버 위성+레이블")
 
 
 class OlNaverSatelliteLayer(OlNaverMapsLayer):
@@ -116,7 +119,8 @@ class OlNaverSatelliteLayer(OlNaverMapsLayer):
     def __init__(self):
         version = _resolveNaverVersion("satellite")
         tmsUrl = f"https://map.pstatic.net/nrb/styles/satellite/{version}/{{z}}/{{x}}/{{y}}@2x.png?mt=bg.ol.ts"
-        OlNaverMapsLayer.__init__(self, name="Naver Satellite", html="naver_satellite.html", xyzUrl=tmsUrl)
+        OlNaverMapsLayer.__init__(self, name="Naver Satellite", html="naver_satellite.html", xyzUrl=tmsUrl,
+                                  displayName="네이버 위성지도")
 
 
 class OlNaverPhysicalLayer(OlNaverMapsLayer):
@@ -125,14 +129,15 @@ class OlNaverPhysicalLayer(OlNaverMapsLayer):
     def __init__(self):
         version = _resolveNaverVersion("terrain")
         tmsUrl = f"https://map.pstatic.net/nrb/styles/terrain/{version}/{{z}}/{{x}}/{{y}}@2x.png?mt=bg.ol.ts.lko"
-        OlNaverMapsLayer.__init__(self, name="Naver Physical", html="naver_physical.html", xyzUrl=tmsUrl)
+        OlNaverMapsLayer.__init__(self, name="Naver Physical", html="naver_physical.html", xyzUrl=tmsUrl,
+                                  displayName="네이버 지형도")
 
 
 class OlNaverCadastralLayer(OlNaverMapsLayer):
-    # DEFERRED to 4.1
     # style=basic, mt=bg.ol.ts.lp
 
     def __init__(self):
         version = _resolveNaverVersion("basic")
         tmsUrl = f"https://map.pstatic.net/nrb/styles/basic/{version}/{{z}}/{{x}}/{{y}}@2x.png?mt=bg.ol.ts.lp"
-        OlNaverMapsLayer.__init__(self, name="Naver Cadastral", html="naver_cadastral.html", xyzUrl=tmsUrl)
+        OlNaverMapsLayer.__init__(self, name="Naver Cadastral", html="naver_cadastral.html", xyzUrl=tmsUrl,
+                                  displayName="네이버 지적도")

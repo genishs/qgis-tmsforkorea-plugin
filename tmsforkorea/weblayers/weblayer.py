@@ -82,10 +82,16 @@ class WebLayer:
 
     emitsLoadEnd = True
 
-    def __init__(self, groupName, groupIcon, name, html, xyzUrl=None, tilePixelRatio=1):
+    def __init__(self, groupName, groupIcon, name, html, xyzUrl=None, tilePixelRatio=1,
+                 displayName=None):
+        # `name` stays as the stable internal identifier (layerTypeName) — it is
+        # the key used in the registry and in legacy project files. `displayName`
+        # is what shows up in the QGIS menu and layer panel; localize that while
+        # leaving the internal name in English so existing projects keep working
+        # across locales.
         self.groupName = groupName
         self.groupIcon = groupIcon
-        self.displayName = name
+        self.displayName = displayName if displayName is not None else name
         self.layerTypeName = name
         self._html = html
         # optional GDAL TMS config to use as layer instead of an

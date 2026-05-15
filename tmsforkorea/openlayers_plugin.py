@@ -129,8 +129,8 @@ class OpenlayersPlugin:
         """
         keyPresent = bool(getAzureMapsKey())
         tooltipWhenDisabled = (
-            "Configure an Azure Maps subscription key first "
-            "(this group's 'Configure Azure Maps Key…' action)."
+            "먼저 Azure 구독 키를 설정해 주세요 "
+            "(이 그룹의 'Azure 구독 키 설정…' 항목)."
         )
         for layer in self._azureLayerTypes:
             action = getattr(layer, "_actionAddLayer", None)
@@ -145,14 +145,14 @@ class OpenlayersPlugin:
         # require an API key (no custom QDialog needed for a single field).
         currentKey = getAzureMapsKey()
         prompt = (
-            "Enter your Azure Maps subscription key.\n"
-            "Free S0 tier available at:\n"
+            "Azure Maps 구독 키(subscription key)를 입력하세요.\n"
+            "무료 S0 등급 가입:\n"
             "  " + AZURE_MAPS_SIGNUP_URL + "\n\n"
-            "Leave blank and press OK to clear the saved key."
+            "비워두고 확인을 누르면 저장된 키가 삭제됩니다."
         )
         key, ok = QInputDialog.getText(
             self.iface.mainWindow(),
-            "Azure Maps — Subscription Key",
+            "Azure 지도 — 구독 키 설정",
             prompt,
             QLineEdit.EchoMode.Normal,
             currentKey,
@@ -166,14 +166,14 @@ class OpenlayersPlugin:
         if key.strip():
             self.iface.messageBar().pushMessage(
                 "TMS for Korea",
-                "Azure Maps key saved. You can now add Azure Maps layers.",
+                "Azure 구독 키가 저장되었습니다. 이제 Azure 지도 레이어를 추가할 수 있습니다.",
                 level=Qgis.MessageLevel.Info,
                 duration=5,
             )
         else:
             self.iface.messageBar().pushMessage(
                 "TMS for Korea",
-                "Azure Maps key cleared.",
+                "Azure 구독 키가 삭제되었습니다.",
                 level=Qgis.MessageLevel.Info,
                 duration=4,
             )
@@ -186,14 +186,14 @@ class OpenlayersPlugin:
         self._olMenu = QMenu("TMS for Korea")
         self._olMenu.setIcon(QIcon(":/plugins/openlayers/openlayers.png"))
 
-        self._actionAbout = QAction(QApplication.translate("dlgAbout", "About OpenLayers Plugin"), self.iface.mainWindow())
+        self._actionAbout = QAction("TMS for Korea 정보", self.iface.mainWindow())
         self._actionAbout.triggered.connect(self._showAbout)
         self._olMenu.addAction(self._actionAbout)
 
         # The Azure key action is created here but attached to the Azure
         # Maps submenu later (not to the top-level TMS menu) so the key
         # entry sits alongside the layers it gates.
-        self._actionAzureKey = QAction("Configure Azure Maps Key…", self.iface.mainWindow())
+        self._actionAzureKey = QAction("Azure 구독 키 설정…", self.iface.mainWindow())
         self._actionAzureKey.triggered.connect(self._configureAzureMapsKey)
 
         # Kakao Maps - upstream policy block since 2025-10-20.
@@ -269,18 +269,18 @@ class OpenlayersPlugin:
 
         # Disabled Kakao Maps placeholder — communicates upstream policy
         # block in the UI itself instead of silently omitting the group.
-        self._kakaoPlaceholderMenu = QMenu("Kakao Maps")
+        self._kakaoPlaceholderMenu = QMenu("카카오 지도")
         self._kakaoPlaceholderMenu.setIcon(QIcon(":/plugins/openlayers/openlayers.png"))
         self._kakaoInfoAction = QAction(
-            "Unavailable — Kakao CDN blocked (2025-10-20)",
+            "사용 불가 — 카카오 정책 차단 (2025-10-20)",
             self.iface.mainWindow(),
         )
         self._kakaoInfoAction.setEnabled(False)
         self._kakaoInfoAction.setToolTip(
-            "Kakao blocks direct tile access since 2025-10-20.\n"
-            "Restoring Kakao Maps requires embedding the official\n"
-            "Kakao Maps JavaScript SDK via QtWebEngine — tracked as a\n"
-            "separate phase. See MIGRATION.md for the full rationale."
+            "2025-10-20부터 카카오가 타일 직접 접근을 차단했습니다.\n"
+            "복원하려면 QtWebEngine + 공식 카카오맵 JS SDK 임베드가\n"
+            "필요하며, 별도 phase로 추후 진행 예정입니다.\n"
+            "자세한 내용은 MIGRATION.md를 참고하세요."
         )
         self._kakaoPlaceholderMenu.addAction(self._kakaoInfoAction)
         self._kakaoPlaceholderMenu.setEnabled(False)
@@ -324,9 +324,9 @@ class OpenlayersPlugin:
         if isinstance(layerType, OlAzureMapsLayer) and not getAzureMapsKey():
             self.iface.messageBar().pushMessage(
                 "TMS for Korea",
-                "Azure Maps subscription key not configured. "
-                "Use 'Web > TMS for Korea > Configure Azure Maps Key…' first "
-                "(free S0 tier at " + AZURE_MAPS_SIGNUP_URL + ").",
+                "Azure 구독 키가 설정되지 않았습니다. "
+                "먼저 '웹 > TMS for Korea > Azure 지도 > Azure 구독 키 설정…'을 실행해 주세요 "
+                "(무료 S0 등급: " + AZURE_MAPS_SIGNUP_URL + ").",
                 level=Qgis.MessageLevel.Warning,
                 duration=10,
             )
@@ -454,7 +454,7 @@ class OpenlayersPlugin:
         if not valid:
             self.iface.messageBar().pushMessage(
                 "TMS for Korea",
-                "Layer '%s' is invalid; check Log Messages > TMS for Korea." % layerName,
+                "레이어 '%s'를 추가할 수 없습니다. '로그 메시지 > TMS for Korea'에서 상세 내용을 확인하세요." % layerName,
                 level=Qgis.MessageLevel.Warning,
             )
 
@@ -557,7 +557,7 @@ class OpenlayersPlugin:
                     QgsProject.instance().removeMapLayer(
                         oldLayer.id())
 
-                    msg = "Updated layer '%s' from old OpenLayers Plugin version" % newLayer.name()
+                    msg = "이전 OpenLayers 플러그인 버전의 레이어 '%s'를 새 형식으로 변환했습니다." % newLayer.name()
                     self.iface.messageBar().pushMessage(
                         "OpenLayers Plugin", msg, level=Qgis.MessageLevel.Info)
                     QgsMessageLog.logMessage(

@@ -53,7 +53,7 @@ def buildAzureMapsUrl(tilesetId):
 class OlAzureMapsLayer(WebLayer3857):
     """Base class for all Azure Maps tilesets (EPSG:3857)."""
 
-    groupName = 'Azure Maps'
+    groupName = 'Azure 지도'
     groupIcon = 'openlayers.png'  # reuse existing resource; future: dedicated icon
     epsgList = [3857]
     fullExtent = [-20037508.34, -20037508.34, 20037508.34, 20037508.34]
@@ -62,7 +62,7 @@ class OlAzureMapsLayer(WebLayer3857):
     SCALE_ON_MAX_ZOOM = 13540
     emitsLoadEnd = False
 
-    def __init__(self, name, tilesetId):
+    def __init__(self, name, tilesetId, displayName=None):
         self._tilesetId = tilesetId
         WebLayer3857.__init__(
             self,
@@ -71,6 +71,7 @@ class OlAzureMapsLayer(WebLayer3857):
             name=name,
             html=None,
             xyzUrl=buildAzureMapsUrl(tilesetId),
+            displayName=displayName,
         )
 
     # Re-read the key on every access so users who configure the key after
@@ -85,16 +86,19 @@ class OlAzureMapsLayer(WebLayer3857):
 class OlAzureRoadLayer(OlAzureMapsLayer):
     def __init__(self):
         OlAzureMapsLayer.__init__(self, name='Azure Road',
-                                  tilesetId='microsoft.base.road')
+                                  tilesetId='microsoft.base.road',
+                                  displayName='Azure 일반지도')
 
 
 class OlAzureSatelliteLayer(OlAzureMapsLayer):
     def __init__(self):
         OlAzureMapsLayer.__init__(self, name='Azure Satellite',
-                                  tilesetId='microsoft.imagery')
+                                  tilesetId='microsoft.imagery',
+                                  displayName='Azure 위성지도')
 
 
 class OlAzureHybridLayer(OlAzureMapsLayer):
     def __init__(self):
         OlAzureMapsLayer.__init__(self, name='Azure Hybrid',
-                                  tilesetId='microsoft.base.hybrid')
+                                  tilesetId='microsoft.base.hybrid',
+                                  displayName='Azure 위성+레이블')

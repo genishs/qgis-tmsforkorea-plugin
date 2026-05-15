@@ -3,7 +3,7 @@
 `tmsforkorea` 플러그인의 QGIS 4.0 (Qt6) 포팅 작업 전체 기록.
 
 - **시작**: 2026-05-14 / **최종 갱신**: 2026-05-15
-- **결과 산출물**: v4.0.0 → v4.0.1 → v4.1.0 → v4.1.1 → v4.1.2 → **v4.1.3** (브랜치 `4.x/main`)
+- **결과 산출물**: v4.0.0 → v4.0.1 → v4.1.0 → v4.1.1 → v4.1.2 → v4.1.3 → **v4.1.4** (브랜치 `4.x/main`)
 - **검증 환경**: QGIS 4.0.1-Norrköping, Python 3.12.13, Windows 11
 
 ---
@@ -324,6 +324,38 @@ AttributeError: type object 'QLineEdit' has no attribute 'Normal'
 
 설계 메모: Azure 레이어 트래킹용으로 `self._azureLayerTypes` 리스트를 plugin 인스턴스에 추가. 이는 registry 조회 대신 직접 보유한 참조라 menu refresh 시 isinstance 비교 없이 바로 순회 가능.
 
+#### `v4.1.4` UI 한글화
+
+사용자 요청 — 메뉴와 README를 한글 중심으로 전환.
+
+원칙:
+- **사용자 노출** 텍스트(메뉴 라벨, 다이얼로그 제목/문구, 툴팁, 메시지 바, README, 플러그인 매니저용 description): **한글**
+- **내부 식별자**(`layerTypeName`, registry dict 키, `Log Messages`의 로그, 예외 메시지): **영문 유지**
+
+내부 ID와 표시 라벨 분리:
+- `WebLayer.__init__`에 `displayName=None` 키워드 인자 추가. 미지정 시 `name`(=`layerTypeName`)으로 fallback → 기존 코드 비파괴
+- 각 레이어 서브클래스(`OlNaverStreetLayer` 등)에 `displayName="네이버 일반지도"` 같은 한글 라벨을 명시적으로 전달
+- 결과: 메뉴는 `네이버 일반지도`로 보이지만 registry는 여전히 `"Naver Street"` 키로 lookup → 기존 프로젝트(영문 layerTypeName 저장) 호환성 보장
+
+번역 목록:
+| 영문 | 한글 |
+|---|---|
+| About OpenLayers Plugin | TMS for Korea 정보 |
+| Configure Azure Maps Key… | Azure 구독 키 설정… |
+| Azure Maps | Azure 지도 |
+| Naver Maps v5 | 네이버 지도 v5 |
+| VWorld Maps | 브이월드 (VWorld) |
+| Kakao Maps (placeholder) | 카카오 지도 |
+| Unavailable — Kakao CDN blocked (2025-10-20) | 사용 불가 — 카카오 정책 차단 (2025-10-20) |
+| Azure Road / Satellite / Hybrid | Azure 일반지도 / 위성지도 / 위성+레이블 |
+| Naver Street / Hybrid / Satellite / Physical / Cadastral | 네이버 일반지도 / 위성+레이블 / 위성지도 / 지형도 / 지적도 |
+| VWorld Street / Gray / Satellite / Hybrid | 브이월드 일반지도 / 흑백지도 / 위성지도 / 위성+레이블 |
+| OSM Standard | OSM 기본지도 |
+
+`Log Messages > TMS for Korea` 채널의 로그는 영문 유지 — 사용자 보고 시 검색/grep 친화성을 위해. 메시지 바 같은 transient UI는 한글로 표시.
+
+README는 한글 우선으로 재작성, 끝에 영문 요약 단락(`For English users`)을 짧게 유지해 글로벌 사용자도 핵심 정보 파악 가능하게 함. `plugins.qgis.org` 카탈로그는 영문 위주이므로 metadata.txt의 `description`은 한글 + 영문 한 줄 병기.
+
 ---
 
 ## 5. 최종 결과
@@ -355,10 +387,10 @@ QGIS 4.0.1-Norrköping (1ccf690c) / Python 3.12.13 / PyQt6 / Windows 11
 
 ### 5.4 통계
 
-- 머지된 phase 브랜치: 13개 (Phase 0 두 개 + Phase 1 두 개 + Phase 1 hotfix 두 개 + release 컷 + docs + v4.0.1 hotfix + Phase 3 Azure Maps + v4.1.1 hotfix + v4.1.2 hotfix + v4.1.3 UX)
-- 발급된 태그: `v4.0.0-beta1`, `v4.0.0-beta2`, `v4.0.0-beta3`, `v4.0.0`, `v4.0.1`, `v4.1.0`, `v4.1.1`, `v4.1.2`, `v4.1.3`
-- 검증 사이클: 15회 (APPROVED 14회, REJECTED 1회 → 재시도 후 APPROVED)
-- 코드 변화: 약 -750줄 / +470줄
+- 머지된 phase 브랜치: 14개 (Phase 0 두 개 + Phase 1 두 개 + Phase 1 hotfix 두 개 + release 컷 + docs + v4.0.1 hotfix + Phase 3 Azure Maps + v4.1.1 hotfix + v4.1.2 hotfix + v4.1.3 UX + v4.1.4 한글화)
+- 발급된 태그: `v4.0.0-beta1`, `v4.0.0-beta2`, `v4.0.0-beta3`, `v4.0.0`, `v4.0.1`, `v4.1.0`, `v4.1.1`, `v4.1.2`, `v4.1.3`, `v4.1.4`
+- 검증 사이클: 16회 (APPROVED 15회, REJECTED 1회 → 재시도 후 APPROVED)
+- 코드 변화: 약 -750줄 / +520줄
 
 ---
 
@@ -477,4 +509,5 @@ with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as zf:
 | **v4.1.0 (Azure Maps)** | `583849e` |
 | **v4.1.1 (Naver UA preprocessor)** | `71f9a59` |
 | **v4.1.2 (QLineEdit.EchoMode hotfix)** | `c067ccf` |
-| **v4.1.3 (Azure menu reorg + Kakao placeholder)** | (이 작업 — pending commit) |
+| **v4.1.3 (Azure menu reorg + Kakao placeholder)** | `6f8f63c` |
+| **v4.1.4 (UI 한글화)** | (이 작업 — pending commit) |

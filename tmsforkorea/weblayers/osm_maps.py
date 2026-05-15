@@ -48,13 +48,15 @@ class OlOSMLayer(WebLayer3857):
 
     attribution = "© OpenStreetMap contributors"
 
-    def __init__(self, name, xyzUrl):
+    def __init__(self, name, xyzUrl, displayName=None):
         WebLayer3857.__init__(self, groupName=self.groupName, groupIcon=self.groupIcon,
-                              name=name, html=None, xyzUrl=xyzUrl)
+                              name=name, html=None, xyzUrl=xyzUrl,
+                              displayName=displayName)
 
 
 class OlOSMStandardLayer(OlOSMLayer):
 
     def __init__(self):
         OlOSMLayer.__init__(self, name='OSM Standard',
-                            xyzUrl='https://tile.openstreetmap.org/{z}/{x}/{y}.png')
+                            xyzUrl='https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            displayName='OSM 기본지도')

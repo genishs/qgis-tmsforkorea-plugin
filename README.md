@@ -1,19 +1,23 @@
 TMS for Korea
 =======================
 
-> **QGIS 4.x branch (`4.x/main`) — v4.1.2**
+> **QGIS 4.x branch (`4.x/main`) — v4.1.3**
 > This branch is the QGIS 4 (Qt6) port. The legacy WebKit-based renderer
 > has been replaced with XYZ tile providers. The `master` branch remains
 > the QGIS 3.x release line for users still on Qt5 builds.
 >
 > Install via QGIS plugin manager: **Plugins → Manage and Install →
-> Install from ZIP** with `latest-binary/tmsforkorea-4.1.2.zip`.
+> Install from ZIP** with `latest-binary/tmsforkorea-4.1.3.zip`.
 >
 > - **v4.1.1**: Fix Naver tile loading by working around an upstream
 >   `User-Agent` filter that rejected QGIS's default UA string.
 > - **v4.1.2**: Hotfix — "Configure Azure Maps Key…" raised
 >   `AttributeError: QLineEdit.Normal` under PyQt6; replaced with the
 >   fully-qualified `QLineEdit.EchoMode.Normal`.
+> - **v4.1.3**: Menu UX — Azure Maps key entry moved into the Azure
+>   Maps submenu and Azure layers are now grayed out until the key is
+>   configured. Kakao Maps shows up as a disabled placeholder submenu
+>   so the upstream block is visible in the UI.
 
 
 QGIS TMS Plugin for Korean users
@@ -23,8 +27,10 @@ QGIS TMS Plugin for Korean users
  - OpenStreetMap Standard
  - Azure Maps (Road, Satellite, Hybrid) — requires user-supplied subscription key.
    Free S0 tier at https://azure.microsoft.com/products/azure-maps . Configure via
-   `Web → TMS for Korea → Configure Azure Maps Key…`
- - Kakao(Daum) — unavailable: Kakao blocks direct tile access since 2025-10-20 (App Key + SDK only)
+   `Web → TMS for Korea → Azure Maps → Configure Azure Maps Key…`
+   (Azure layers are grayed out until a key is set.)
+ - Kakao(Daum) — unavailable: Kakao blocks direct tile access since 2025-10-20 (App Key + SDK only).
+   Surfaced as a disabled placeholder submenu so the situation is visible in the QGIS UI.
  - NGII — deferred (custom EPSG:5179 tile scheme, needs GDAL TMS work)
  - Google Maps — out of scope (ToS requires session-token API + billing)
  - Bing Maps — replaced by Azure Maps (Bing program closed to new keys 2024-06-30)

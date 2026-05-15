@@ -3,7 +3,7 @@
 `tmsforkorea` 플러그인의 QGIS 4.0 (Qt6) 포팅 작업 전체 기록.
 
 - **시작**: 2026-05-14 / **최종 갱신**: 2026-05-15
-- **결과 산출물**: v4.0.0 → v4.0.1 → v4.1.0 → v4.1.1 → **v4.1.2** (브랜치 `4.x/main`)
+- **결과 산출물**: v4.0.0 → v4.0.1 → v4.1.0 → v4.1.1 → v4.1.2 → **v4.1.3** (브랜치 `4.x/main`)
 - **검증 환경**: QGIS 4.0.1-Norrköping, Python 3.12.13, Windows 11
 
 ---
@@ -307,6 +307,23 @@ AttributeError: type object 'QLineEdit' has no attribute 'Normal'
 
 조치: `QLineEdit.Normal` → `QLineEdit.EchoMode.Normal`. 코드 한 줄. v4.1.2로 hotfix.
 
+#### `v4.1.3` UX 개편 — 메뉴 재배치와 Kakao placeholder
+
+사용자 요청으로 두 가지 UX 변경:
+
+1. **Azure Maps 메뉴 재배치**
+   - 기존: "Configure Azure Maps Key…"가 최상위 `TMS for Korea` 메뉴에 위치, Azure 레이어들은 그룹 서브메뉴에 별도로
+   - 변경: 키 입력 액션을 `Azure Maps` 서브메뉴 안으로 이동(separator 뒤에 부착) → 키 입력과 레이어가 같은 메뉴 트리에 위치
+   - 추가: 키 미설정 시 Azure 3종 레이어 액션을 `setEnabled(False)`로 회색 처리. 키 설정/삭제 시 `_refreshAzureMenuState()`가 즉시 갱신해서 plugin 리로드 불필요
+   - 회색 액션에 tooltip 안내: "Configure an Azure Maps subscription key first…"
+
+2. **Kakao Maps placeholder 가시화**
+   - 정책 결정 (c): 카카오 통합 자체는 구현 없이 진행하되, "차단됨" 상태를 UI에 노출 강화
+   - 비활성 `QMenu("Kakao Maps")` 추가, 단일 disabled child action `Unavailable — Kakao CDN blocked (2025-10-20)`. tooltip에 QtWebEngine + JS SDK 필요 사유 명시
+   - `setEnabled(False)`로 메뉴 전체 회색 처리. 클릭 불가지만 그룹의 존재 자체는 가시화 → 사용자가 README를 안 읽어도 상황 인지 가능
+
+설계 메모: Azure 레이어 트래킹용으로 `self._azureLayerTypes` 리스트를 plugin 인스턴스에 추가. 이는 registry 조회 대신 직접 보유한 참조라 menu refresh 시 isinstance 비교 없이 바로 순회 가능.
+
 ---
 
 ## 5. 최종 결과
@@ -338,10 +355,10 @@ QGIS 4.0.1-Norrköping (1ccf690c) / Python 3.12.13 / PyQt6 / Windows 11
 
 ### 5.4 통계
 
-- 머지된 phase 브랜치: 12개 (Phase 0 두 개 + Phase 1 두 개 + Phase 1 hotfix 두 개 + release 컷 + docs + v4.0.1 hotfix + Phase 3 Azure Maps + v4.1.1 hotfix + v4.1.2 hotfix)
-- 발급된 태그: `v4.0.0-beta1`, `v4.0.0-beta2`, `v4.0.0-beta3`, `v4.0.0`, `v4.0.1`, `v4.1.0`, `v4.1.1`, `v4.1.2`
-- 검증 사이클: 14회 (APPROVED 13회, REJECTED 1회 → 재시도 후 APPROVED)
-- 코드 변화: 약 -750줄 / +425줄
+- 머지된 phase 브랜치: 13개 (Phase 0 두 개 + Phase 1 두 개 + Phase 1 hotfix 두 개 + release 컷 + docs + v4.0.1 hotfix + Phase 3 Azure Maps + v4.1.1 hotfix + v4.1.2 hotfix + v4.1.3 UX)
+- 발급된 태그: `v4.0.0-beta1`, `v4.0.0-beta2`, `v4.0.0-beta3`, `v4.0.0`, `v4.0.1`, `v4.1.0`, `v4.1.1`, `v4.1.2`, `v4.1.3`
+- 검증 사이클: 15회 (APPROVED 14회, REJECTED 1회 → 재시도 후 APPROVED)
+- 코드 변화: 약 -750줄 / +470줄
 
 ---
 
@@ -459,4 +476,5 @@ with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as zf:
 | **v4.0.1 (Naver URI fix + Cadastral + 진단 로깅)** | `bfe35df` |
 | **v4.1.0 (Azure Maps)** | `583849e` |
 | **v4.1.1 (Naver UA preprocessor)** | `71f9a59` |
-| **v4.1.2 (QLineEdit.EchoMode hotfix)** | (이 작업 — pending commit) |
+| **v4.1.2 (QLineEdit.EchoMode hotfix)** | `c067ccf` |
+| **v4.1.3 (Azure menu reorg + Kakao placeholder)** | (이 작업 — pending commit) |

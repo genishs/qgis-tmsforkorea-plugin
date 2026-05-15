@@ -91,6 +91,9 @@ class OpenlayersPlugin:
         self.pluginLayerRegistry = QgsPluginLayerRegistry()
         # Naver UA workaround: registered in initGui, removed in unload.
         self._naverUaPreprocessorId = None
+        # Azure Maps layer types tracked separately so we can toggle their
+        # menu actions enabled/disabled when the subscription key changes.
+        self._azureLayerTypes = []
 
     def _getAboutDialog(self):
         if self.dlgAbout is None:
@@ -100,6 +103,42 @@ class OpenlayersPlugin:
 
     def _showAbout(self):
         self._getAboutDialog().show()
+
+    def _attachAzureConfigureAction(self):
+        """Place 'Configure Azure Maps Key…' inside the Azure Maps submenu.
+
+        Called once after the per-group submenus have been assembled in
+        initGui. A leading separator distinguishes the action from the
+        layer entries above it.
+        """
+        if not self._azureLayerTypes:
+            return
+        azureGroup = self._azureLayerTypes[0].group
+        if azureGroup is None:
+            return
+        azureMenu = azureGroup.menu()
+        azureMenu.addSeparator()
+        azureMenu.addAction(self._actionAzureKey)
+
+    def _refreshAzureMenuState(self):
+        """Enable Azure layer menu entries only when a key is configured.
+
+        Re-run after the key is set or cleared in the configure dialog so
+        the menu state reflects the current QSettings value without a
+        plugin reload.
+        """
+        keyPresent = bool(getAzureMapsKey())
+        tooltipWhenDisabled = (
+            "Configure an Azure Maps subscription key first "
+            "(this group's 'Configure Azure Maps Key…' action)."
+        )
+        for layer in self._azureLayerTypes:
+            action = getattr(layer, "_actionAddLayer", None)
+            if action is None:
+                # initGui's per-group loop has not run yet; nothing to do.
+                continue
+            action.setEnabled(keyPresent)
+            action.setToolTip("" if keyPresent else tooltipWhenDisabled)
 
     def _configureAzureMapsKey(self):
         # Simple modal text prompt; equivalent UX to other QGIS plugins that
@@ -121,6 +160,9 @@ class OpenlayersPlugin:
         if not ok:
             return
         setAzureMapsKey(key.strip())
+        # Reflect the new state on the Azure layer actions immediately so
+        # the user does not have to reopen the menu or reload the plugin.
+        self._refreshAzureMenuState()
         if key.strip():
             self.iface.messageBar().pushMessage(
                 "TMS for Korea",
@@ -148,11 +190,18 @@ class OpenlayersPlugin:
         self._actionAbout.triggered.connect(self._showAbout)
         self._olMenu.addAction(self._actionAbout)
 
+        # The Azure key action is created here but attached to the Azure
+        # Maps submenu later (not to the top-level TMS menu) so the key
+        # entry sits alongside the layers it gates.
         self._actionAzureKey = QAction("Configure Azure Maps Key…", self.iface.mainWindow())
         self._actionAzureKey.triggered.connect(self._configureAzureMapsKey)
-        self._olMenu.addAction(self._actionAzureKey)
 
-        # Kakao Maps - 5181 (disabled: WebKit-dependent, pending QGIS 4.x port)
+        # Kakao Maps - upstream policy block since 2025-10-20.
+        # The CDN (*.daumcdn.net) rejects direct tile access regardless of
+        # any API key; restoration requires embedding Kakao's JavaScript
+        # SDK via QtWebEngine, which is a separate phase. Until then a
+        # disabled placeholder submenu surfaces the situation in the UI
+        # so users discover it without reading the README.
         # self._olLayerTypeRegistry.register(OlDaumStreetLayer())
         # self._olLayerTypeRegistry.register(OlDaumHybridLayer())
         # self._olLayerTypeRegistry.register(OlDaumSatelliteLayer())
@@ -182,10 +231,16 @@ class OpenlayersPlugin:
         # OpenStreetMap - 3857
         self._olLayerTypeRegistry.register(OlOSMStandardLayer())
 
-        # Azure Maps - 3857 (requires user-supplied subscription key)
-        self._olLayerTypeRegistry.register(OlAzureRoadLayer())
-        self._olLayerTypeRegistry.register(OlAzureSatelliteLayer())
-        self._olLayerTypeRegistry.register(OlAzureHybridLayer())
+        # Azure Maps - 3857 (requires user-supplied subscription key).
+        # Kept in a separate list so the menu actions for these can be
+        # toggled enabled/disabled based on whether the key is configured.
+        self._azureLayerTypes = [
+            OlAzureRoadLayer(),
+            OlAzureSatelliteLayer(),
+            OlAzureHybridLayer(),
+        ]
+        for layer in self._azureLayerTypes:
+            self._olLayerTypeRegistry.register(layer)
 
         # NGII - 5179
         #self._olLayerTypeRegistry.register(OlNgiiStreetLayer())
@@ -205,6 +260,31 @@ class OpenlayersPlugin:
             for layer in self._olLayerTypeRegistry.groupLayerTypes(group):
                 layer.addMenuEntry(groupMenu, self.iface.mainWindow())
             self._olMenu.addMenu(groupMenu)
+
+        # Attach the Azure key action inside the Azure Maps submenu (now
+        # that its QMenu exists from the loop above) and reflect the
+        # current key state on the layer actions.
+        self._attachAzureConfigureAction()
+        self._refreshAzureMenuState()
+
+        # Disabled Kakao Maps placeholder — communicates upstream policy
+        # block in the UI itself instead of silently omitting the group.
+        self._kakaoPlaceholderMenu = QMenu("Kakao Maps")
+        self._kakaoPlaceholderMenu.setIcon(QIcon(":/plugins/openlayers/openlayers.png"))
+        self._kakaoInfoAction = QAction(
+            "Unavailable — Kakao CDN blocked (2025-10-20)",
+            self.iface.mainWindow(),
+        )
+        self._kakaoInfoAction.setEnabled(False)
+        self._kakaoInfoAction.setToolTip(
+            "Kakao blocks direct tile access since 2025-10-20.\n"
+            "Restoring Kakao Maps requires embedding the official\n"
+            "Kakao Maps JavaScript SDK via QtWebEngine — tracked as a\n"
+            "separate phase. See MIGRATION.md for the full rationale."
+        )
+        self._kakaoPlaceholderMenu.addAction(self._kakaoInfoAction)
+        self._kakaoPlaceholderMenu.setEnabled(False)
+        self._olMenu.addMenu(self._kakaoPlaceholderMenu)
 
         # Create Web menu, if it doesn't exist yet
         self.iface.addPluginToWebMenu("_tmp", self._actionAbout)

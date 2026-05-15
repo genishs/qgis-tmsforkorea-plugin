@@ -56,6 +56,8 @@ from .weblayers.azure_maps import (OlAzureRoadLayer,
                                    setAzureMapsKey,
                                    AZURE_MAPS_SIGNUP_URL)
 
+from . import network_hooks
+
 import os.path
 import time
 import collections
@@ -87,6 +89,8 @@ class OpenlayersPlugin:
         # in the generated ui_about_dialog.py do not block plugin load.
         self.dlgAbout = None
         self.pluginLayerRegistry = QgsPluginLayerRegistry()
+        # Naver UA workaround: registered in initGui, removed in unload.
+        self._naverUaPreprocessorId = None
 
     def _getAboutDialog(self):
         if self.dlgAbout is None:
@@ -133,6 +137,10 @@ class OpenlayersPlugin:
             )
 
     def initGui(self):
+        # Install Naver UA workaround as early as possible so it is active
+        # by the time any layer issues its first tile request.
+        self._naverUaPreprocessorId = network_hooks.install()
+
         self._olMenu = QMenu("TMS for Korea")
         self._olMenu.setIcon(QIcon(":/plugins/openlayers/openlayers.png"))
 
@@ -220,6 +228,11 @@ class OpenlayersPlugin:
         # Unregister plugin layer type
         self.pluginLayerRegistry.removePluginLayerType(
             OpenlayersLayer.LAYER_TYPE)
+
+        # Tear down the Naver UA preprocessor so the rewrite is no longer
+        # active after the plugin is unloaded.
+        network_hooks.uninstall(self._naverUaPreprocessorId)
+        self._naverUaPreprocessorId = None
 
         QgsProject.instance().readProject.disconnect(self.projectLoaded)
         QgsProject.instance().projectSaved.disconnect(self.projectSaved)

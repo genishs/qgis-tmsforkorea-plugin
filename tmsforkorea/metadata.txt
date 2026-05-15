@@ -3,7 +3,7 @@ name=TMS for Korea
 qgisMinimumVersion=4.0
 description=QGIS plugin. VWorld, Naver, OpenStreetMap, Azure Maps for Korean / global users (QGIS 4.x. Azure Maps requires a user-supplied subscription key)
 about=QGIS plugin. VWorld, Naver, OpenStreetMap, Azure Maps for Korean / global users (QGIS 4.x. Azure Maps requires a user-supplied subscription key)
-version=4.1.0
+version=4.1.1
 
 # tags are comma separated with spaces allowed
 tags=openlayers, vworld, naver, openstreetmap, osm, cadastral, azure, azure maps
@@ -25,6 +25,20 @@ email=mapplus@gmail.com
 
 # Uncomment the following line and add your changelog entries:
 changelog=
+    4.1.1
+        - Fix: Naver tile requests now succeed under QGIS 4. Naver's CDN
+          (map.pstatic.net) returns HTTP 500 whenever the User-Agent
+          header matches `Mozilla/5.0 QGIS/<digit>` — which is QGIS's
+          default UA shape — so every tile request from QGIS 4 was
+          rejected upstream regardless of URL correctness. The plugin
+          now registers a QgsNetworkAccessManager request preprocessor
+          that rewrites the UA to a generic desktop browser string for
+          requests to map.pstatic.net only; all other traffic is left
+          untouched. Verified 2026-05-15 via curl:
+            HTTP 500  UA="Mozilla/5.0 QGIS/4.0.1"   (default — blocked)
+            HTTP 200  UA="Mozilla/5.0 (Windows ...) Chrome/120..."
+        - The preprocessor is registered in initGui and removed in
+          unload, so disabling the plugin restores the global default.
     4.1.0
         - Add: Azure Maps (Road, Satellite, Hybrid) via the official
           v2024-04-01 tile API. Requires a user-supplied subscription

@@ -2,8 +2,8 @@
 
 `tmsforkorea` 플러그인의 QGIS 4.0 (Qt6) 포팅 작업 전체 기록.
 
-- **시작 / 완료**: 2026-05-14 (단일 세션)
-- **결과 산출물**: v4.0.0 (태그 `v4.0.0`, 브랜치 `4.x/main`)
+- **시작**: 2026-05-14 / **최종 갱신**: 2026-05-15
+- **결과 산출물**: v4.0.0 → v4.0.1 → v4.1.0 → **v4.1.1** (브랜치 `4.x/main`)
 - **검증 환경**: QGIS 4.0.1-Norrköping, Python 3.12.13, Windows 11
 
 ---
@@ -12,12 +12,13 @@
 
 3.x 코드의 절반이 Qt6에서 사라진 `QtWebKit` 위에 올라가 있었다. 이를 **포기**하고 가능한 레이어만 **표준 XYZ 타일**로 재구성하여 QGIS 4.x에서 동작하는 플러그인을 완성했다.
 
-| | 3.0.5 | 4.0.0 |
-|---|---|---|
-| 동작 레이어 수 | 19개 (실제로는 일부 dead) | **9개** (모두 검증됨) |
-| 의존성 | Qt5 + QtWebKit + OpenLayers.js | Qt6 + QgsRasterLayer(xyz) |
-| 코드 라인 | (기준) | -750줄 / +200줄 |
-| 신규 layer | — | **OpenStreetMap Standard** |
+| | 3.0.5 | 4.0.0 | 4.1.1 (현행) |
+|---|---|---|---|
+| 동작 레이어 수 | 19개 (일부 dead) | 9개 | **13개** (모두 검증됨) |
+| 의존성 | Qt5 + QtWebKit + OpenLayers.js | Qt6 + QgsRasterLayer(xyz) | Qt6 + QgsRasterLayer(xyz) + QgsNetworkAccessManager preprocessor |
+| 코드 라인 | (기준) | -750줄 / +200줄 | -750줄 / +420줄 |
+| 신규 layer | — | OpenStreetMap Standard | + Naver Cadastral, **Azure Maps 3종** |
+| 핵심 fix | — | WebKit 제거, Qt6 enum | Naver URI 인코딩, **Naver UA 차단 우회** |
 
 ---
 
@@ -252,6 +253,46 @@ push → merge → 다음 phase
 - Naver Cadastral 재등록 (Phase 1 deferred 해제)
 - Phase 2 research 요약을 metadata changelog와 README에 명시
 
+### Phase 3 — Azure Maps 통합과 Naver UA 차단 발견
+
+#### `4.x/phase2-azure-maps` (머지 `583849e`, 태그 `v4.1.0`)
+
+Phase 2 research에서 Bing의 후속 솔루션으로 식별된 Azure Maps를 별도 phase로 추가. Azure Maps는 v2024-04-01 시점부터 표준 `{z}/{x}/{y}` XYZ 패턴을 제공해 QGIS의 native XYZ provider로 직접 소비 가능 — 이전 세대 Bing이 요구하던 quadkey 변환이 불필요.
+
+설계:
+- `weblayers/azure_maps.py` 신규: `OlAzureMapsLayer` 베이스 + 3종 (Road / Satellite / Hybrid)
+- 구독 키는 사용자 입력으로만 받음. `QSettings("Plugin-OpenLayers/azure_maps_key")`에 저장
+- 키를 plugin 로드 이후에 입력해도 즉시 반영되도록 `hasXYZUrl()`/`xyzUrlConfig()`에서 **lazy read**
+- 키 없이 레이어 추가 시도 시 401을 그냥 보내지 않고 message-bar로 친절한 안내 + free S0 가입 링크
+- `Web > TMS for Korea > Configure Azure Maps Key…` 메뉴 액션 추가 — `QInputDialog.getText`로 단일 필드 prompt
+- URL 빌더는 5개 inner `&` 파라미터(`api-version` / `tilesetId` / `zoom` / `x` / `y` / `subscription-key`)를 가지므로 v4.0.1의 `_buildXYZUri` `&` → `%26` 인코딩 라운드트립 검증 통과
+
+#### `4.x/hotfix-4.1.1-naver-ua` (메인 세션 → 태그 `v4.1.1`)
+
+사용자 보고: v4.1.0에서도 **Naver 레이어 추가해도 타일이 안 보임**. v4.0.1의 URI 인코딩 수정에도 불구하고 동일 증상. `Log Messages > TMS for Korea`의 진단 출력은 `valid: True`로 URI 자체는 문제 없음을 시사.
+
+진단:
+- curl로 동일 URL 직접 호출 → HTTP 200 + PNG 정상 수신 → 업스트림 / 토큰 / URL 모두 정상
+- curl에 QGIS 시뮬레이션 UA 추가하니 재현됨:
+  ```
+  HTTP 500  UA="Mozilla/5.0 QGIS/4.0.1"
+  HTTP 500  UA="Mozilla/5.0 QGIS/40001"
+  HTTP 500  UA="Mozilla/5.0 QGIS/4.0.1/Windows"
+  HTTP 200  UA="Mozilla/5.0 QGIS"                       (버전 없음)
+  HTTP 200  UA="Mozilla/5.0 (Windows ...) QGIS/4.0.1"  (정상 UA + 접미사)
+  HTTP 200  UA="QGIS/4.0.1"                             (Mozilla 없음)
+  ```
+- **결론**: `map.pstatic.net`은 UA 문자열에 `Mozilla/5.0 QGIS/<digit>` 패턴이 매칭되면 HTTP 500을 반환. 이는 QGIS의 **기본 UA 형식과 정확히 일치**하므로 QGIS 4의 모든 Naver 타일 요청이 무조건 차단된 상태였음. anti-scraping 룰로 추정.
+
+조치 (`network_hooks.py` 신규):
+- `QgsNetworkAccessManager.setRequestPreprocessor(callable)`로 글로벌 request preprocessor 등록
+- preprocessor는 `request.url().host() == "map.pstatic.net"`인 요청에 한해서만 `User-Agent` 헤더를 generic 데스크톱 Chrome UA로 덮어씀. 다른 모든 트래픽은 무손실
+- preprocessor 예외는 swallow — UA 재작성 실패가 무관한 요청을 깨트리지 않도록
+- `OpenlayersPlugin.initGui()`에서 install, `unload()`에서 uninstall — plugin disable 시 글로벌 default 복원
+- 진단 로그: install 결과를 `Log Messages > TMS for Korea`에 기록
+
+이로써 v4.0.0/v4.0.1 사용자가 `Layer is valid`인데도 타일이 안 보였던 미스터리 해결. 향후 비슷한 UA 차단이 다른 한국 CDN에서 발견되면 `network_hooks.py`에 host별 분기를 추가하면 됨.
+
 ---
 
 ## 5. 최종 결과
@@ -259,13 +300,14 @@ push → merge → 다음 phase
 ### 5.1 동작 확인 환경
 QGIS 4.0.1-Norrköping (1ccf690c) / Python 3.12.13 / PyQt6 / Windows 11
 
-### 5.2 동작하는 레이어 (v4.0.1 기준, 10개)
+### 5.2 동작하는 레이어 (v4.1.1 기준, 13개)
 
 | 그룹 | 레이어 | CRS | 비고 |
 |---|---|---|---|
 | VWorld Maps | Street, Gray, Satellite, Hybrid | EPSG:3857 | 표준 XYZ |
-| Naver Maps v5 | Street, Hybrid, Satellite, Physical, Cadastral | EPSG:3857 | 동적 버전 토큰 fetch + fallback. v4.0.1에서 URI 인코딩 수정 + Cadastral 활성화 |
+| Naver Maps v5 | Street, Hybrid, Satellite, Physical, Cadastral | EPSG:3857 | 동적 버전 토큰 fetch + fallback. v4.0.1에서 URI 인코딩 수정 + Cadastral 활성화. **v4.1.1에서 UA preprocessor로 업스트림 차단 우회** |
 | OpenStreetMap | Standard | EPSG:3857 | 신규 추가 |
+| Azure Maps | Road, Satellite, Hybrid | EPSG:3857 | v4.1.0 신규. 사용자 구독 키 필요 (free S0 tier) |
 
 ### 5.3 의식적으로 deferred
 
@@ -274,7 +316,7 @@ QGIS 4.0.1-Norrköping (1ccf690c) / Python 3.12.13 / PyQt6 / Windows 11
 | Kakao (5종) | **업스트림 정책 차단** (2025-10-20부터 App Key + SDK only) | 별도 phase: QtWebEngine + 공식 SDK 임베드 |
 | NGII (5종) | EPSG:5179 비표준 타일 스킴 + GDAL TMS 역방향 zoom 미지원 | 미정 |
 | Google Maps | ToS: session-token API + 결제 필요 | 미정 |
-| Bing Maps | 신규 키 발급 종료 (2024-06-30) | Azure Maps로 별도 phase |
+| Bing Maps | 신규 키 발급 종료 (2024-06-30) | **v4.1.0에서 Azure Maps로 대체 완료** |
 | OSM 변형 (HOT, CyclOSM, OpenTopoMap) | 기본 1개만 ship | 향후 |
 | OpenLayers Overview dock | QtWebKit 의존 | 영구 제거 또는 `QgsMapCanvas` 기반 재구현 |
 | Mango (4종) | 업스트림 서버 down | 서버 복귀 시 |
@@ -282,10 +324,10 @@ QGIS 4.0.1-Norrköping (1ccf690c) / Python 3.12.13 / PyQt6 / Windows 11
 
 ### 5.4 통계
 
-- 머지된 phase 브랜치: 9개 (Phase 0 두 개 + Phase 1 두 개 + Phase 1 hotfix 두 개 + release 컷 + docs + v4.0.1 hotfix)
-- 발급된 태그: `v4.0.0-beta1`, `v4.0.0-beta2`, `v4.0.0-beta3`, `v4.0.0`, `v4.0.1`
-- 검증 사이클: 11회 (APPROVED 10회, REJECTED 1회 → 재시도 후 APPROVED)
-- 코드 변화: 약 -750줄 / +270줄
+- 머지된 phase 브랜치: 11개 (Phase 0 두 개 + Phase 1 두 개 + Phase 1 hotfix 두 개 + release 컷 + docs + v4.0.1 hotfix + Phase 3 Azure Maps + v4.1.1 hotfix)
+- 발급된 태그: `v4.0.0-beta1`, `v4.0.0-beta2`, `v4.0.0-beta3`, `v4.0.0`, `v4.0.1`, `v4.1.0`, `v4.1.1`
+- 검증 사이클: 13회 (APPROVED 12회, REJECTED 1회 → 재시도 후 APPROVED)
+- 코드 변화: 약 -750줄 / +420줄
 
 ---
 
@@ -397,3 +439,5 @@ with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as zf:
 | **v4.0.0 final** | `be16a8b` |
 | docs: MIGRATION.md | `7c7d8cc` |
 | **v4.0.1 (Naver URI fix + Cadastral + 진단 로깅)** | `bfe35df` |
+| **v4.1.0 (Azure Maps)** | `583849e` |
+| **v4.1.1 (Naver UA preprocessor)** | (이 작업 — pending commit) |

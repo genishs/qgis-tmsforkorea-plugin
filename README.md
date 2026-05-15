@@ -1,13 +1,17 @@
 TMS for Korea
 =======================
 
-> **QGIS 4.x branch (`4.x/main`) — v4.0.0**
+> **QGIS 4.x branch (`4.x/main`) — v4.1.1**
 > This branch is the QGIS 4 (Qt6) port. The legacy WebKit-based renderer
 > has been replaced with XYZ tile providers. The `master` branch remains
 > the QGIS 3.x release line for users still on Qt5 builds.
 >
 > Install via QGIS plugin manager: **Plugins → Manage and Install →
-> Install from ZIP** with `latest-binary/tmsforkorea-4.0.0.zip`.
+> Install from ZIP** with `latest-binary/tmsforkorea-4.1.1.zip`.
+>
+> **v4.1.1 fixes Naver tile loading** under QGIS 4 by working around an
+> upstream `User-Agent` filter that rejected QGIS's default UA string.
+> Upgrade if Naver layers appeared as empty/invalid in v4.0.0–v4.1.0.
 
 
 QGIS TMS Plugin for Korean users

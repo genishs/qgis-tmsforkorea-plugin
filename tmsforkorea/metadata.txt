@@ -3,7 +3,7 @@ name=TMS for Korea
 qgisMinimumVersion=4.0
 description=QGIS plugin. VWorld, Naver, OpenStreetMap, Azure Maps for Korean / global users (QGIS 4.x. Azure Maps requires a user-supplied subscription key)
 about=QGIS plugin. VWorld, Naver, OpenStreetMap, Azure Maps for Korean / global users (QGIS 4.x. Azure Maps requires a user-supplied subscription key)
-version=4.1.1
+version=4.1.2
 
 # tags are comma separated with spaces allowed
 tags=openlayers, vworld, naver, openstreetmap, osm, cadastral, azure, azure maps
@@ -25,6 +25,13 @@ email=mapplus@gmail.com
 
 # Uncomment the following line and add your changelog entries:
 changelog=
+    4.1.2
+        - Hotfix: "Configure Azure Maps Key…" menu action raised
+          AttributeError: type object 'QLineEdit' has no attribute
+          'Normal' under PyQt6. Replaced Qt5-style short alias
+          QLineEdit.Normal with the fully-qualified spelling
+          QLineEdit.EchoMode.Normal so the key-entry dialog opens
+          successfully on QGIS 4.x.
     4.1.1
         - Fix: Naver tile requests now succeed under QGIS 4. Naver's CDN
           (map.pstatic.net) returns HTTP 500 whenever the User-Agent

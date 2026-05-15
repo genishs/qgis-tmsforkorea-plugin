@@ -115,7 +115,7 @@ class OpenlayersPlugin:
             self.iface.mainWindow(),
             "Azure Maps — Subscription Key",
             prompt,
-            QLineEdit.Normal,
+            QLineEdit.EchoMode.Normal,
             currentKey,
         )
         if not ok:

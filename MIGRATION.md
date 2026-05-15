@@ -3,7 +3,7 @@
 `tmsforkorea` 플러그인의 QGIS 4.0 (Qt6) 포팅 작업 전체 기록.
 
 - **시작**: 2026-05-14 / **최종 갱신**: 2026-05-15
-- **결과 산출물**: v4.0.0 → v4.0.1 → v4.1.0 → **v4.1.1** (브랜치 `4.x/main`)
+- **결과 산출물**: v4.0.0 → v4.0.1 → v4.1.0 → v4.1.1 → **v4.1.2** (브랜치 `4.x/main`)
 - **검증 환경**: QGIS 4.0.1-Norrköping, Python 3.12.13, Windows 11
 
 ---
@@ -293,6 +293,20 @@ Phase 2 research에서 Bing의 후속 솔루션으로 식별된 Azure Maps를 �
 
 이로써 v4.0.0/v4.0.1 사용자가 `Layer is valid`인데도 타일이 안 보였던 미스터리 해결. 향후 비슷한 UA 차단이 다른 한국 CDN에서 발견되면 `network_hooks.py`에 host별 분기를 추가하면 됨.
 
+#### `v4.1.2` 핫픽스 — Qt6 enum 잔존 (Azure Maps key dialog)
+
+v4.1.0의 Azure Maps 통합에서 `QInputDialog.getText(..., QLineEdit.Normal, ...)`로 키 입력 prompt를 띄움. PyQt5는 `QLineEdit.Normal` short alias를 허용하지만 **PyQt6는 거부**:
+
+```
+AttributeError: type object 'QLineEdit' has no attribute 'Normal'
+  File "openlayers_plugin.py", line 118, in _configureAzureMapsKey
+    QLineEdit.Normal,
+```
+
+사용자가 "Configure Azure Maps Key…" 메뉴를 실제로 클릭하기 전까지 잠복했던 버그. v4.0.0-beta3에서 도입한 Qt6 enum 점검 체크리스트(부록 A)에 `QLineEdit.Normal` 패턴이 누락되어 있었음 — Azure phase 빌드 prep에서 이 grep을 한 번도 안 돌린 결과. 부록 A에 패턴 추가.
+
+조치: `QLineEdit.Normal` → `QLineEdit.EchoMode.Normal`. 코드 한 줄. v4.1.2로 hotfix.
+
 ---
 
 ## 5. 최종 결과
@@ -324,10 +338,10 @@ QGIS 4.0.1-Norrköping (1ccf690c) / Python 3.12.13 / PyQt6 / Windows 11
 
 ### 5.4 통계
 
-- 머지된 phase 브랜치: 11개 (Phase 0 두 개 + Phase 1 두 개 + Phase 1 hotfix 두 개 + release 컷 + docs + v4.0.1 hotfix + Phase 3 Azure Maps + v4.1.1 hotfix)
-- 발급된 태그: `v4.0.0-beta1`, `v4.0.0-beta2`, `v4.0.0-beta3`, `v4.0.0`, `v4.0.1`, `v4.1.0`, `v4.1.1`
-- 검증 사이클: 13회 (APPROVED 12회, REJECTED 1회 → 재시도 후 APPROVED)
-- 코드 변화: 약 -750줄 / +420줄
+- 머지된 phase 브랜치: 12개 (Phase 0 두 개 + Phase 1 두 개 + Phase 1 hotfix 두 개 + release 컷 + docs + v4.0.1 hotfix + Phase 3 Azure Maps + v4.1.1 hotfix + v4.1.2 hotfix)
+- 발급된 태그: `v4.0.0-beta1`, `v4.0.0-beta2`, `v4.0.0-beta3`, `v4.0.0`, `v4.0.1`, `v4.1.0`, `v4.1.1`, `v4.1.2`
+- 검증 사이클: 14회 (APPROVED 13회, REJECTED 1회 → 재시도 후 APPROVED)
+- 코드 변화: 약 -750줄 / +425줄
 
 ---
 
@@ -393,6 +407,10 @@ grep -rn "QImage\.Format_" --include='*.py' .
 grep -rnE "QDialogButtonBox\.(Ok|Cancel|Close|Yes|No|Apply|Reset|Help)\b" \
   --include='*.py' .
 
+# (4a) QLineEdit echo-mode short alias (EchoMode. 필요) — v4.1.2에서 추가
+grep -rnE "QLineEdit\.(Normal|Password|NoEcho|PasswordEchoOnEdit)\b" \
+  --include='*.py' .
+
 # (5) QtWebKit / QtWebKitWidgets (Qt6에 없음)
 grep -rn "QtWebKit" --include='*.py' .
 
@@ -440,4 +458,5 @@ with zipfile.ZipFile(out,'w',zipfile.ZIP_DEFLATED) as zf:
 | docs: MIGRATION.md | `7c7d8cc` |
 | **v4.0.1 (Naver URI fix + Cadastral + 진단 로깅)** | `bfe35df` |
 | **v4.1.0 (Azure Maps)** | `583849e` |
-| **v4.1.1 (Naver UA preprocessor)** | (이 작업 — pending commit) |
+| **v4.1.1 (Naver UA preprocessor)** | `71f9a59` |
+| **v4.1.2 (QLineEdit.EchoMode hotfix)** | (이 작업 — pending commit) |

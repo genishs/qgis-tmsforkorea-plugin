@@ -20,14 +20,54 @@ email                : mapplus at gmail.com
  ***************************************************************************/
 """
 
-from qgis.core import (Qgis, QgsCoordinateReferenceSystem)
+import requests
+from qgis.core import (Qgis, QgsCoordinateReferenceSystem, QgsMessageLog)
 from .weblayer import WebLayer3857
+
+# Verified live 2026-05-14
+NAVER_FALLBACK_VERSION = "1778232861"
+
+# Per-style version cache (populated on first successful fetch per session)
+_NAVER_VERSION_CACHE = {}
+
+# Tracks which styles have already emitted a fetch-failure warning this session
+_NAVER_FETCH_FAILED = set()
+
+
+def _resolveNaverVersion(style):
+    """Return the live Naver tile version token for *style*, falling back to
+    NAVER_FALLBACK_VERSION if the discovery endpoint is unreachable or the
+    response cannot be parsed.  Results are cached per-style for the lifetime
+    of the Python interpreter session."""
+    if style in _NAVER_VERSION_CACHE:
+        return _NAVER_VERSION_CACHE[style]
+
+    try:
+        url = (
+            f"https://map.pstatic.net/nrb/styles/{style}.json"
+            f"?fmt=jpg&mt=bg.ol.ts.ar.lko"
+        )
+        response = requests.get(url, timeout=3)
+        response.raise_for_status()
+        version = response.json()["version"]
+        _NAVER_VERSION_CACHE[style] = version
+        return version
+    except Exception:
+        if style not in _NAVER_FETCH_FAILED:
+            _NAVER_FETCH_FAILED.add(style)
+            QgsMessageLog.logMessage(
+                "Naver: could not fetch live version for style '%s', using fallback '%s'. "
+                "Tiles may degrade if Naver rotates the token." % (style, NAVER_FALLBACK_VERSION),
+                "OpenLayers Plugin",
+                Qgis.MessageLevel.Warning,
+            )
+        return NAVER_FALLBACK_VERSION
 
 
 class OlNaverMapsLayer(WebLayer3857):
 
-    # Group in menu
-    groupName = 'Naver Maps v5'
+    # Group in menu (displayed label — Korean)
+    groupName = '네이버 지도 v5'
 
     # Group icon in menu
     groupIcon = 'naver_icon.png'
@@ -47,41 +87,57 @@ class OlNaverMapsLayer(WebLayer3857):
 
     emitsLoadEnd = False
 
-    def __init__(self, name, html, xyzUrl, tilePixelRatio=2):
+    def __init__(self, name, html, xyzUrl, tilePixelRatio=2, displayName=None):
         WebLayer3857.__init__(self, groupName=self.groupName, groupIcon=self.groupIcon,
-                              name=name, html=html, xyzUrl=xyzUrl, tilePixelRatio=tilePixelRatio)
+                              name=name, html=html, xyzUrl=xyzUrl, tilePixelRatio=tilePixelRatio,
+                              displayName=displayName)
 
 
 class OlNaverStreetLayer(OlNaverMapsLayer):
+    # style=basic, mt=bg.ol.ts.lko
 
     def __init__(self):
-        tmsUrl = "https://map.pstatic.net/nrb/styles/basic/1651664082/{z}/{x}/{y}@2x.png?mt=bg.ol.ts.lko"
-        OlNaverMapsLayer.__init__(self, name="Naver Street", html="naver_street.html", xyzUrl=None)
+        version = _resolveNaverVersion("basic")
+        tmsUrl = f"https://map.pstatic.net/nrb/styles/basic/{version}/{{z}}/{{x}}/{{y}}@2x.png?mt=bg.ol.ts.lko"
+        OlNaverMapsLayer.__init__(self, name="Naver Street", html="naver_street.html", xyzUrl=tmsUrl,
+                                  displayName="네이버 일반지도")
 
 
 class OlNaverHybridLayer(OlNaverMapsLayer):
+    # style=satellite, mt=bg.ol.ts.lko (satellite base + label overlay)
 
     def __init__(self):
-        tmsUrl = "https://map.pstatic.net/nrb/styles/satellite/1651664082/{z}/{x}/{y}@2x.png?mt=bg.ol.ts.lko"
-        OlNaverMapsLayer.__init__(self, name="Naver Hybrid", html="naver_hybrid.html", xyzUrl=None)
+        version = _resolveNaverVersion("satellite")
+        tmsUrl = f"https://map.pstatic.net/nrb/styles/satellite/{version}/{{z}}/{{x}}/{{y}}@2x.png?mt=bg.ol.ts.lko"
+        OlNaverMapsLayer.__init__(self, name="Naver Hybrid", html="naver_hybrid.html", xyzUrl=tmsUrl,
+                                  displayName="네이버 위성+레이블")
 
 
 class OlNaverSatelliteLayer(OlNaverMapsLayer):
+    # style=satellite, mt=bg.ol.ts
 
     def __init__(self):
-        tmsUrl = "https://map.pstatic.net/nrb/styles/satellite/1651664082/{z}/{x}/{y}@2x.png?mt=bg.ol.ts"
-        OlNaverMapsLayer.__init__(self, name="Naver Satellite", html="naver_satellite.html", xyzUrl=None)
+        version = _resolveNaverVersion("satellite")
+        tmsUrl = f"https://map.pstatic.net/nrb/styles/satellite/{version}/{{z}}/{{x}}/{{y}}@2x.png?mt=bg.ol.ts"
+        OlNaverMapsLayer.__init__(self, name="Naver Satellite", html="naver_satellite.html", xyzUrl=tmsUrl,
+                                  displayName="네이버 위성지도")
 
 
 class OlNaverPhysicalLayer(OlNaverMapsLayer):
+    # style=terrain, mt=bg.ol.ts.lko
 
     def __init__(self):
-        tmsUrl = "https://map.pstatic.net/nrb/styles/terrain/1651664082/{z}/{x}/{y}@2x.png?mt=bg.ol.ts.lko"
-        OlNaverMapsLayer.__init__(self, name="Naver Physical", html="naver_physical.html", xyzUrl=None)
+        version = _resolveNaverVersion("terrain")
+        tmsUrl = f"https://map.pstatic.net/nrb/styles/terrain/{version}/{{z}}/{{x}}/{{y}}@2x.png?mt=bg.ol.ts.lko"
+        OlNaverMapsLayer.__init__(self, name="Naver Physical", html="naver_physical.html", xyzUrl=tmsUrl,
+                                  displayName="네이버 지형도")
 
 
 class OlNaverCadastralLayer(OlNaverMapsLayer):
+    # style=basic, mt=bg.ol.ts.lp
 
     def __init__(self):
-        tmsUrl = "https://map.pstatic.net/nrb/styles/basic/1651664082/{z}/{x}/{y}@2x.png?mt=bg.ol.ts.lp"
-        OlNaverMapsLayer.__init__(self, name="Naver Cadastral", html="naver_cadastral.html", xyzUrl=None)
+        version = _resolveNaverVersion("basic")
+        tmsUrl = f"https://map.pstatic.net/nrb/styles/basic/{version}/{{z}}/{{x}}/{{y}}@2x.png?mt=bg.ol.ts.lp"
+        OlNaverMapsLayer.__init__(self, name="Naver Cadastral", html="naver_cadastral.html", xyzUrl=tmsUrl,
+                                  displayName="네이버 지적도")

@@ -25,8 +25,8 @@ from .weblayer import WebLayer3857
 
 class OlVWorldMapsLayer(WebLayer3857):
 
-    # Group in menu
-    groupName = 'VWorld Maps'
+    # Group in menu (displayed label — Korean)
+    groupName = '브이월드 (VWorld)'
 
     # Group icon in menu
     groupIcon = 'vworld_icon.png'
@@ -46,34 +46,43 @@ class OlVWorldMapsLayer(WebLayer3857):
 
     emitsLoadEnd = False
 
-    def __init__(self, name, html, xyzUrl, tilePixelRatio=0):
+    def __init__(self, name, html, xyzUrl, tilePixelRatio=0, displayName=None):
         WebLayer3857.__init__(self, groupName=self.groupName, groupIcon=self.groupIcon,
-                              name=name, html=html, xyzUrl=xyzUrl, tilePixelRatio=0) # Temporary
+                              name=name, html=html, xyzUrl=xyzUrl, tilePixelRatio=0,
+                              displayName=displayName) # Temporary
 
 
 class OlVWorldStreetLayer(OlVWorldMapsLayer):
 
     def __init__(self):
         tmsUrl = 'https://xdworld.vworld.kr/2d/Base/service/{z}/{x}/{y}.png'
-        OlVWorldMapsLayer.__init__(self, name='VWorld Street', html='vworld_street.html', xyzUrl=tmsUrl, tilePixelRatio=1)
+        OlVWorldMapsLayer.__init__(self, name='VWorld Street', html='vworld_street.html',
+                                   xyzUrl=tmsUrl, tilePixelRatio=1,
+                                   displayName='브이월드 일반지도')
 
 
 class OlVWorldHybridLayer(OlVWorldMapsLayer):
 
     def __init__(self):
         tmsUrl = ['https://xdworld.vworld.kr/2d/Satellite/service/{z}/{x}/{y}.jpeg', 'https://xdworld.vworld.kr/2d/Hybrid/service/{z}/{x}/{y}.png']
-        OlVWorldMapsLayer.__init__(self, name='VWorld Hybrid', html='vworld_hybrid.html', xyzUrl=tmsUrl, tilePixelRatio=1)
+        OlVWorldMapsLayer.__init__(self, name='VWorld Hybrid', html='vworld_hybrid.html',
+                                   xyzUrl=tmsUrl, tilePixelRatio=1,
+                                   displayName='브이월드 위성+레이블')
 
 
 class OlVWorldSatelliteLayer(OlVWorldMapsLayer):
 
     def __init__(self):
         tmsUrl = 'https://xdworld.vworld.kr/2d/Satellite/service/{z}/{x}/{y}.jpeg'
-        OlVWorldMapsLayer.__init__(self, name='VWorld Satellite', html='vworld_satellite.html', xyzUrl=tmsUrl, tilePixelRatio=1)
+        OlVWorldMapsLayer.__init__(self, name='VWorld Satellite', html='vworld_satellite.html',
+                                   xyzUrl=tmsUrl, tilePixelRatio=1,
+                                   displayName='브이월드 위성지도')
 
 
 class OlVWorldGrayLayer(OlVWorldMapsLayer):
 
     def __init__(self):
         tmsUrl = 'https://xdworld.vworld.kr/2d/gray/service/{z}/{x}/{y}.png'
-        OlVWorldMapsLayer.__init__(self, name='VWorld Gray', html='vworld_gray.html', xyzUrl=tmsUrl, tilePixelRatio=1)
+        OlVWorldMapsLayer.__init__(self, name='VWorld Gray', html='vworld_gray.html',
+                                   xyzUrl=tmsUrl, tilePixelRatio=1,
+                                   displayName='브이월드 흑백지도')

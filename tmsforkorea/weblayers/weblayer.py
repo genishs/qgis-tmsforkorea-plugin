@@ -82,10 +82,16 @@ class WebLayer:
 
     emitsLoadEnd = True
 
-    def __init__(self, groupName, groupIcon, name, html, xyzUrl=None, tilePixelRatio=1):
+    def __init__(self, groupName, groupIcon, name, html, xyzUrl=None, tilePixelRatio=1,
+                 displayName=None):
+        # `name` stays as the stable internal identifier (layerTypeName) — it is
+        # the key used in the registry and in legacy project files. `displayName`
+        # is what shows up in the QGIS menu and layer panel; localize that while
+        # leaving the internal name in English so existing projects keep working
+        # across locales.
         self.groupName = groupName
         self.groupIcon = groupIcon
-        self.displayName = name
+        self.displayName = displayName if displayName is not None else name
         self.layerTypeName = name
         self._html = html
         # optional GDAL TMS config to use as layer instead of an
@@ -148,7 +154,7 @@ class WebLayer3857(WebLayer):
             google_proj_def = "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +\
             lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 "
             google_proj_def += "+units=m +nadgrids=@null +wktext +no_defs"
-            isOk = coordRefSys.createFromProj4(google_proj_def)
+            isOk = coordRefSys.createFromProj(google_proj_def)
             if not isOk:
                 return None
         return coordRefSys

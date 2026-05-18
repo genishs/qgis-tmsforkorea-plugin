@@ -24,7 +24,6 @@ modified             : 2018-11-23 by Minpa Lee, mapplus at gmail.com
 from qgis.PyQt.QtCore import (QUrl, Qt, QMetaObject, QTimer, QEventLoop,
                               QSize, QObject, pyqtSignal, qDebug, pyqtSlot)
 from qgis.PyQt.QtGui import QImage, QPainter
-from qgis.PyQt.QtWebKitWidgets import QWebPage
 from qgis.core import (QgsMapLayerRenderer, Qgis, QgsMessageLog,
                        QgsPluginLayer, QgsRectangle)
 
@@ -38,34 +37,6 @@ def debug(msg, verbosity=1):
             qDebug(msg)
         except Exception:
             pass
-
-
-class OLWebPage(QWebPage):
-    def __init__(self, parent=None):
-        QWebPage.__init__(self, parent)
-
-        self.loaded = False
-
-        self.extent = None
-        self.olResolutions = None
-
-        self.lastExtent = None
-        self.lastViewPortSize = None
-        self.lastLogicalDpi = None
-        self.lastOutputDpi = None
-        self.lastMapUnitsPerPixel = None
-
-    def resolutions(self):
-        if self.olResolutions is None:
-            # get OpenLayers resolutions
-            jsResolutions = self.mainFrame().evaluateJavaScript(
-                "map.layers[0].resolutions")
-            debug("Detected OpenLayers resolutions: %s" % jsResolutions)
-            self.olResolutions = jsResolutions
-        return self.olResolutions or []
-
-    def javaScriptConsoleMessage(self, message, lineNumber, sourceID):
-        qDebug("%s[%d]: %s" % (sourceID, lineNumber, message))
 
 
 class OpenlayersController(QObject):
@@ -87,8 +58,12 @@ class OpenlayersController(QObject):
         debug("OpenlayersController.__init__", 3)
         self.context = context
         self.layerType = layerType
-
         self.img = QImage()
+
+        # webPage is None in QGIS 4.x (QtWebKit removed); skip all WebKit setup
+        if webPage is None:
+            self.page = None
+            return
 
         self.page = webPage
         self.page.loadFinished.connect(self.pageLoaded)
@@ -216,7 +191,7 @@ class OpenlayersController(QObject):
         olSize = QSize(int(olWidth), int(olHeight))
         self.page.setViewportSize(olSize)
         self.page.mainFrame().evaluateJavaScript("map.updateSize();")
-        self.img = QImage(olSize, QImage.Format_ARGB32_Premultiplied)
+        self.img = QImage(olSize, QImage.Format.Format_ARGB32_Premultiplied)
 
         self.page.extent = rendererContext.extent()
         debug("map.zoomToExtent (%f, %f, %f, %f)" % (
@@ -285,8 +260,8 @@ class OpenlayersController(QObject):
                 self.img.width(), self.img.height(),
                   targetWidth, targetHeight), 3)
             self.img = self.img.scaled(targetWidth, targetHeight,
-                                       Qt.KeepAspectRatio,
-                                       Qt.SmoothTransformation)
+                                       Qt.AspectRatioMode.KeepAspectRatio,
+                                       Qt.TransformationMode.SmoothTransformation)
 
         # save current state
         self.page.lastExtent = rendererContext.extent()
@@ -367,7 +342,8 @@ class OpenlayersLayer(QgsPluginLayer):
         self.layerType = None
 
         self.iface = iface
-        self.olWebPage = OLWebPage(self)
+        # QtWebKit is not available in QGIS 4.x; olWebPage remains None
+        self.olWebPage = None
 
     def readXml(self, node, context):
         # early read of custom properties
@@ -391,18 +367,30 @@ class OpenlayersLayer(QgsPluginLayer):
 
         if ol_layer_type is not None:
             self.setLayerType(ol_layer_type)
-        else:
-            # Set default layer type
-            self.setLayerType(
-                self.olLayerTypeRegistry.getByName("OpenStreetMap"))
-            msg = "Obsolete or unknown layer type '%s', using OpenStreetMap\
-             instead" % ol_layer_type_name
-            self.iface.messageBar().pushMessage("OpenLayers Plugin", msg,
-                                                level=Qgis.MessageLevel(1))
-            QgsMessageLog.logMessage(msg, "OpenLayers Plugin",
-                                     QgsMessageLog.WARNING)
+            return True
 
-        return True
+        fallback = self.olLayerTypeRegistry.getByName("OpenStreetMap")
+        if fallback is not None:
+            self.setLayerType(fallback)
+            msg = ("Obsolete or unknown layer type '%s', using OpenStreetMap "
+                   "instead") % ol_layer_type_name
+            self.iface.messageBar().pushMessage("OpenLayers Plugin", msg,
+                                                level=Qgis.MessageLevel.Warning)
+            QgsMessageLog.logMessage(msg, "OpenLayers Plugin",
+                                     Qgis.MessageLevel.Warning)
+            return True
+
+        # No matching layer type and no OSM fallback available — mark invalid
+        # so QGIS shows the layer as broken rather than crashing in projectLoaded.
+        self.setValid(False)
+        msg = ("Layer '%s' uses a provider no longer supported in QGIS 4 "
+               "('%s'). The layer has been removed. Please re-add it from "
+               "the TMS for Korea menu.") % (self.name(), ol_layer_type_name)
+        self.iface.messageBar().pushMessage("OpenLayers Plugin", msg,
+                                            level=Qgis.MessageLevel.Warning)
+        QgsMessageLog.logMessage(msg, "OpenLayers Plugin",
+                                 Qgis.MessageLevel.Warning)
+        return False
 
     def writeXml(self, node, doc, context):
         element = node.toElement()
@@ -425,8 +413,8 @@ class OpenlayersLayer(QgsPluginLayer):
         self.setExtent(QgsRectangle(ext[0], ext[1], ext[2], ext[3]))
 
     def createMapRenderer(self, context):
-        return OpenlayersRenderer(self, context,
-                                  self.olWebPage, self.layerType)
+        # QtWebKit unavailable in QGIS 4.x; return None (no-op renderer)
+        return None
                                   
     def setTransformContext(self, transformContext):
         exta = 1

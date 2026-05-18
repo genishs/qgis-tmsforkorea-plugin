@@ -1,12 +1,12 @@
 [general]
 name=TMS for Korea
-qgisMinimumVersion=3.16.0
-description=QGIS plugin. Kakao(Daum), Naver, VWorld, NGII Map Layers for Korean users
-about=QGIS plugin. Kakao(Daum), Naver, VWorld, NGII Map Layers for Korean users
-version=3.0.5
+qgisMinimumVersion=4.0
+description=한국 사용자를 위한 QGIS 지도 타일 플러그인 — 브이월드, 네이버, OpenStreetMap, Azure 지도 (QGIS 4.x. Azure 지도는 사용자 구독 키 필요)
+about=한국 사용자를 위한 QGIS 지도 타일 플러그인 — 브이월드, 네이버, OpenStreetMap, Azure 지도 (QGIS 4.x. Azure 지도는 사용자 구독 키 필요). QGIS plugin for Korean and international users.
+version=4.1.4
 
 # tags are comma separated with spaces allowed
-tags=openlayers, kakao, naver, vworld, ngii
+tags=openlayers, vworld, naver, openstreetmap, osm, cadastral, azure, azure maps
 
 homepage=https://github.com/mangosystem/qgis-tmsforkorea-plugin
 tracker=https://github.com/mangosystem/qgis-tmsforkorea-plugin
@@ -25,6 +25,130 @@ email=mapplus@gmail.com
 
 # Uncomment the following line and add your changelog entries:
 changelog=
+    4.1.4
+        - UI 한글화: 모든 사용자 노출 메뉴 라벨, 다이얼로그, 메시지 바,
+          툴팁을 한글로 번역. 그룹 메뉴는 "브이월드 (VWorld)",
+          "네이버 지도 v5", "OpenStreetMap", "Azure 지도", "카카오 지도"
+          로 표시. 개별 레이어도 한글 표시명 사용
+          (예: "네이버 일반지도", "브이월드 위성지도", "Azure 일반지도").
+        - 내부 식별자(layerTypeName)는 영문 유지 — 기존 프로젝트 호환성
+          보장 및 디버깅/로그 추적성 유지. WebLayer 베이스에
+          displayName 인자를 분리 도입.
+        - README 한글 중심으로 재작성, 끝에 영문 요약 단락 유지.
+        - 플러그인 매니저에 표시되는 description/about 도 한글화.
+    4.1.3
+        - UX: "Configure Azure Maps Key…" moved from the top-level
+          TMS for Korea menu into the Azure Maps submenu so the key
+          entry sits alongside the layers it gates.
+        - UX: Azure Maps layer entries (Road / Satellite / Hybrid) are
+          now disabled (grayed out) until a subscription key is
+          configured. Setting or clearing the key in the dialog
+          refreshes the enabled state immediately — no plugin reload
+          needed. A tooltip on the disabled entries points users to
+          the configure action.
+        - UX: Kakao Maps now shows up as a disabled placeholder
+          submenu in the TMS for Korea menu with an explanatory
+          "Unavailable — Kakao CDN blocked (2025-10-20)" entry. This
+          surfaces the upstream block in the UI itself instead of
+          requiring users to discover it from the README. Functional
+          Kakao support remains deferred until a QtWebEngine + JS SDK
+          phase lands.
+    4.1.2
+        - Hotfix: "Configure Azure Maps Key…" menu action raised
+          AttributeError: type object 'QLineEdit' has no attribute
+          'Normal' under PyQt6. Replaced Qt5-style short alias
+          QLineEdit.Normal with the fully-qualified spelling
+          QLineEdit.EchoMode.Normal so the key-entry dialog opens
+          successfully on QGIS 4.x.
+    4.1.1
+        - Fix: Naver tile requests now succeed under QGIS 4. Naver's CDN
+          (map.pstatic.net) returns HTTP 500 whenever the User-Agent
+          header matches `Mozilla/5.0 QGIS/<digit>` — which is QGIS's
+          default UA shape — so every tile request from QGIS 4 was
+          rejected upstream regardless of URL correctness. The plugin
+          now registers a QgsNetworkAccessManager request preprocessor
+          that rewrites the UA to a generic desktop browser string for
+          requests to map.pstatic.net only; all other traffic is left
+          untouched. Verified 2026-05-15 via curl:
+            HTTP 500  UA="Mozilla/5.0 QGIS/4.0.1"   (default — blocked)
+            HTTP 200  UA="Mozilla/5.0 (Windows ...) Chrome/120..."
+        - The preprocessor is registered in initGui and removed in
+          unload, so disabling the plugin restores the global default.
+    4.1.0
+        - Add: Azure Maps (Road, Satellite, Hybrid) via the official
+          v2024-04-01 tile API. Requires a user-supplied subscription
+          key — configure via "Web > TMS for Korea > Configure Azure
+          Maps Key...". Free S0 tier covers casual map browsing
+          (azure.microsoft.com/products/azure-maps).
+        - Add: when an Azure layer is requested without a key configured,
+          the menu action shows a message-bar hint instead of attempting
+          an inevitable 401 response.
+        - The Azure subscription key is read on each layer-add from
+          QSettings, so a key entered after plugin load takes effect
+          without restarting QGIS.
+        - URL builder verified to round-trip multi-parameter URLs
+          (Azure has 5 inner '&' chars) through QGIS's xyz URI parser.
+    4.0.1
+        - Fix: Naver tile URIs not rendering on QGIS 4. Previous build
+          aggressively percent-encoded the URL template (?, &, =, @ etc.)
+          inside the XYZ URI; some QGIS 4 builds did not decode it back
+          before substituting {z}/{x}/{y}, producing malformed tile
+          requests. URI now mirrors QGIS's own xyz-connection dialog
+          format (type=xyz first, raw URL template, only '&' encoded).
+        - Add: Naver Cadastral layer is now registered (was deferred
+          from 4.0.0 release scope).
+        - Add: every TMS layer-add is now logged to "Log Messages >
+          TMS for Korea" with the URL template, full URI, and validity
+          status. Invalid layers also push a message-bar warning.
+        - Phase 2 research: Kakao, Google, Bing all deferred indefinitely
+          due to upstream policy (Kakao tile API blocked since 2025-10-20,
+          Google Maps ToS requires session-token API + billing, Bing Maps
+          for Enterprise closed to new keys since 2024-06-30). See
+          MIGRATION.md for full notes.
+    4.0.0
+        - First stable release for QGIS 4.x (Qt6). Verified loading and
+          tile rendering on QGIS 4.0.1 (Norrkoping).
+        - Working layers: VWorld (Street/Gray/Satellite/Hybrid), Naver v5
+          (Street/Hybrid/Satellite/Physical) via XYZ tiles with dynamic
+          version-token discovery, OpenStreetMap Standard.
+        - Removed legacy QtWebKit-based renderer and OpenLayers Overview
+          dock (Qt6 has no QtWebKit).
+        - Hardened readXml so legacy 3.x projects containing Kakao/NGII
+          layers degrade gracefully instead of crashing.
+        - About dialog uses lazy construction and Qt6-compatible enum
+          spellings; pyrcc/pyuic generated files migrated to qgis.PyQt.
+        - Kakao, NGII, Mango deferred to a future release (4.1+);
+          Kakao/NGII require GDAL TMS minidriver work for their
+          custom CRS tile schemes, Mango upstream is unreachable.
+    4.0.0-beta3
+        - Hotfix: Qt6 enum compatibility in ui_about_dialog.py
+          (Qt.AlignCenter -> Qt.AlignmentFlag.AlignCenter,
+           Qt.LinksAccessibleByMouse -> Qt.TextInteractionFlag.LinksAccessibleByMouse,
+           QDialogButtonBox.Close -> QDialogButtonBox.StandardButton.Close, etc.)
+          The fully-qualified spellings work under both PyQt5 and PyQt6.
+        - About dialog now constructed lazily on first menu click instead
+          of in plugin __init__, so any further Qt6 quirks cannot block
+          plugin load.
+    4.0.0-beta2
+        - Hotfix: replace hardcoded PyQt5 imports in resources_rc.py and
+          ui_about_dialog.py with qgis.PyQt so the plugin loads under Qt6.
+          Tested against QGIS 4.0.1 (Norrkoping).
+    4.0.0-beta1
+        - Re-enabled Naver layers (Street, Hybrid, Satellite, Physical) as XYZ tiles
+          with dynamic version-token discovery against Naver's style JSON; falls
+          back to a known-good token if discovery fails. Cadastral deferred.
+        - Added OpenStreetMap Standard layer
+        - Fixed XYZ URI percent-encoding so tile URLs containing query strings
+          (e.g. Naver's ?mt=...) are parsed correctly by the QGIS WMS provider
+        - Hardened readXml against missing OSM fallback so 3.x projects with
+          orphan Kakao/NGII layers degrade gracefully instead of crashing
+        - Mango still unavailable (upstream server unreachable as of 2026-05-14)
+    4.0.0-alpha1
+        - First release for QGIS 4.x (Qt6)
+        - Removed legacy QtWebKit-based renderer and OpenLayers Overview dock
+        - VWorld layers functional as XYZ tile sources
+        - Kakao, NGII deferred to a future release pending GDAL TMS minidriver
+          support for EPSG:5181 / EPSG:5179 tile schemes
     3.0.5
         - Update VWorld, Kakao, Naver Maps (2022/05/19)
     3.0.4

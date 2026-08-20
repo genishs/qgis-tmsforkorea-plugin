@@ -60,3 +60,38 @@ class OlOSMStandardLayer(OlOSMLayer):
         OlOSMLayer.__init__(self, name='OSM Standard',
                             xyzUrl='https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                             displayName='OSM 기본지도')
+
+
+class OlOSMHumanitarianLayer(OlOSMLayer):
+    # Humanitarian (HOT) style, served by OpenStreetMap France. Subdomains
+    # a/b/c exist; QGIS's XYZ provider has no {s} rotation, so pin one host.
+    attribution = "© OpenStreetMap contributors, Humanitarian OSM Team, " \
+                  "tiles courtesy of OpenStreetMap France"
+
+    def __init__(self):
+        OlOSMLayer.__init__(self, name='OSM Humanitarian',
+                            xyzUrl='https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+                            displayName='OSM 인도주의(HOT)')
+
+
+class OlOSMCyclOSMLayer(OlOSMLayer):
+    # CyclOSM — bicycle-oriented style, also hosted by OpenStreetMap France.
+    attribution = "© OpenStreetMap contributors, CyclOSM, " \
+                  "tiles courtesy of OpenStreetMap France"
+
+    def __init__(self):
+        OlOSMLayer.__init__(self, name='OSM CyclOSM',
+                            xyzUrl='https://a.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
+                            displayName='OSM 자전거(CyclOSM)')
+
+
+class OlOSMOpenTopoMapLayer(OlOSMLayer):
+    # OpenTopoMap — topographic style. Tile data tops out around z17.
+    MAX_ZOOM_LEVEL = 17
+    attribution = "© OpenStreetMap contributors, SRTM | map style: " \
+                  "© OpenTopoMap (CC-BY-SA)"
+
+    def __init__(self):
+        OlOSMLayer.__init__(self, name='OSM OpenTopoMap',
+                            xyzUrl='https://a.tile.opentopomap.org/{z}/{x}/{y}.png',
+                            displayName='OSM 지형도(OpenTopoMap)')

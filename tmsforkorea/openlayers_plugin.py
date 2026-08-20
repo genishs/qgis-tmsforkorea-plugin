@@ -46,7 +46,10 @@ from .weblayers.naver_maps import (OlNaverStreetLayer,
                                    OlNaverPhysicalLayer,
                                    OlNaverCadastralLayer)
 
-from .weblayers.osm_maps import OlOSMStandardLayer
+from .weblayers.osm_maps import (OlOSMStandardLayer,
+                                 OlOSMHumanitarianLayer,
+                                 OlOSMCyclOSMLayer,
+                                 OlOSMOpenTopoMapLayer)
 
 from .weblayers.azure_maps import (OlAzureRoadLayer,
                                    OlAzureSatelliteLayer,
@@ -230,6 +233,9 @@ class OpenlayersPlugin:
 
         # OpenStreetMap - 3857
         self._olLayerTypeRegistry.register(OlOSMStandardLayer())
+        self._olLayerTypeRegistry.register(OlOSMHumanitarianLayer())
+        self._olLayerTypeRegistry.register(OlOSMCyclOSMLayer())
+        self._olLayerTypeRegistry.register(OlOSMOpenTopoMapLayer())
 
         # Azure Maps - 3857 (requires user-supplied subscription key).
         # Kept in a separate list so the menu actions for these can be

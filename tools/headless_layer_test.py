@@ -27,6 +27,7 @@ Exit code 0 = all checks passed, 1 = at least one failure.
 import os
 import sys
 import urllib.request
+import urllib.parse
 
 # --- make the plugin package importable (repo_root/tmsforkorea/...) --------
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -50,6 +51,14 @@ from tmsforkorea.weblayers.osm_maps import (
     OlOSMOpenTopoMapLayer,
 )
 
+# [KNOWN BUG REGRESSION GUARD]
+# Layer classes declare MAX_ZOOM_LEVEL (e.g. 19 for OSM, 17 for OpenTopoMap).
+# However, the plugin's _buildXYZUri (mirrored here) currently hardcodes zmax=18.
+# This guard pins the current *effective* behavior (18) rather than the declared intent.
+# When this known defect is fixed in a future version, this guard will fail.
+# That failure is expected and indicates the behavior change took effect.
+# The value below should then be updated to match the new behavior.
+EXPECTED_EFFECTIVE_ZMAX = 18
 
 def build_xyz_uri(xyz_url, tile_pixel_ratio):
     """Mirror OpenlayersPlugin._buildXYZUri exactly."""
@@ -109,14 +118,33 @@ def main():
 
         tile_ok, tile_info = http_ok(sample_tile_url(xyz))
 
-        status = "PASS" if (valid and tile_ok) else "FAIL"
+        # Check effective zmax by parsing the generated URI
+        parsed = urllib.parse.urlparse(uri)
+        qs = urllib.parse.parse_qs(parsed.query)
+        # Note: the uri format is "type=xyz&url=...&zmin=...&zmax=..." so we parse it as if it's all query params
+        # Actually `urllib.parse.parse_qs(uri)` is better if there's no ? prefix.
+        qs = urllib.parse.parse_qs(uri)
+        effective_zmax = None
+        if 'zmax' in qs and qs['zmax']:
+            try:
+                effective_zmax = int(qs['zmax'][0])
+            except ValueError:
+                pass
+
+        declared_zmax = getattr(layer_type, 'MAX_ZOOM_LEVEL', '?')
+        zmax_ok = (effective_zmax == EXPECTED_EFFECTIVE_ZMAX)
+        zmax_status = "OK" if zmax_ok else "MISMATCH"
+
+        status = "PASS" if (valid and tile_ok and zmax_ok) else "FAIL"
         if status == "FAIL":
             failures += 1
-        print("\n[%s] %s  (z<=%s)" % (status, name, getattr(layer_type, 'MAX_ZOOM_LEVEL', '?')))
+        print("\n[%s] %s" % (status, name))
         print("   url      : %s" % xyz)
         print("   uri      : %s" % uri)
         print("   isValid  : %s" % valid)
         print("   tile GET : %s (%s)" % (tile_ok, tile_info))
+        print("   zmax     : declared=%s, effective=%s -> [%s] (expected=%s) (Note: known bug causes effective=18)" % 
+              (declared_zmax, effective_zmax, zmax_status, EXPECTED_EFFECTIVE_ZMAX))
 
     app.exitQgis()
     print("\n" + "-" * 72)

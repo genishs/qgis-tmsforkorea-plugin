@@ -1,9 +1,10 @@
 [general]
 name=TMS for Korea
-qgisMinimumVersion=4.0
-description=Korean web map tile layers for QGIS 4.x — VWorld, Naver, OpenStreetMap and Azure Maps (Azure requires your own subscription key)
-about=한국 사용자를 위한 QGIS 지도 타일 플러그인입니다. 브이월드, 네이버 지도, OpenStreetMap, Azure 지도를 XYZ 타일 레이어로 추가합니다 (QGIS 4.x 전용. Azure 지도는 사용자 본인의 구독 키가 필요합니다). English: QGIS plugin for Korean and international users. Adds Korean web map tile layers (VWorld, Naver, OpenStreetMap, Azure Maps) as XYZ layers for QGIS 4.x. Azure Maps requires your own subscription key.
-version=4.1.5
+qgisMinimumVersion=3.40
+qgisMaximumVersion=4.99
+description=Korean web map tile layers for QGIS 3.40+ and 4.x — VWorld, Naver, OpenStreetMap and Azure Maps (Azure requires your own subscription key)
+about=한국 사용자를 위한 QGIS 지도 타일 플러그인입니다. 브이월드, 네이버 지도, OpenStreetMap, Azure 지도를 XYZ 타일 레이어로 추가합니다 (QGIS 3.40 이상 및 4.x 지원. Azure 지도는 사용자 본인의 구독 키가 필요합니다). English: QGIS plugin for Korean and international users. Adds Korean web map tile layers (VWorld, Naver, OpenStreetMap, Azure Maps) as XYZ layers for QGIS 3.40 or later and 4.x. Azure Maps requires your own subscription key.
+version=4.1.6
 
 # tags are comma separated with spaces allowed
 tags=openlayers, vworld, naver, openstreetmap, osm, cadastral, azure, azure maps
@@ -25,6 +26,20 @@ email=mapplus@gmail.com
 
 # Uncomment the following line and add your changelog entries:
 changelog=
+    4.1.6
+        - QGIS 3 호환: 최저 지원 QGIS 3.40 LTR, 주 지원 QGIS 4.4 LTR.
+          QGIS 3.40·3.44 LTR(Qt5)과 QGIS 4.x(Qt6) 양쪽에서 같은 코드로 동작하며,
+          metadata 에 qgisMinimumVersion=3.40, qgisMaximumVersion=4.99 를 지정했습니다.
+        - 3.0.5 에서 업데이트하시는 분께: 3.0.5 는 옛 QtWebKit 방식이라 4.x 계열은
+          XYZ 타일 방식으로 새로 만들어졌습니다. 그래서 더 이상 동작하지 않던
+          레이어(카카오, NGII, 망고 등)는 빠졌고, 현재 브이월드·네이버 지도 v5·
+          OpenStreetMap·Azure 지도를 제공합니다. 3.0.5 로 저장한 프로젝트에 있던
+          빠진 레이어는 메뉴에서 새로 추가해 주세요.
+        - English: Now supports QGIS 3.40 LTR (minimum) and 3.44 LTR as well as
+          QGIS 4.x (Qt6, primary: 4.4 LTR). If you are updating from 3.0.5: the
+          old QtWebKit-based layers that no longer worked (Kakao, NGII, Mango)
+          were dropped; layers are now XYZ tiles (VWorld, Naver v5,
+          OpenStreetMap, Azure Maps).
     4.1.5
         - 공식 저장소 보안 검사 대응: 개발용 업로드 스크립트(plugin_upload.py)와
           Windows 배치 파일(.bat 2개)을 패키지에서 제거 (플러그인 동작과 무관).

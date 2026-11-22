@@ -3,14 +3,18 @@ TMS for Korea
 
 한국 사용자를 위한 QGIS용 지도 타일 플러그인 (브이월드 · 네이버 · OpenStreetMap · Azure 지도).
 
-> **QGIS 4.x 브랜치 (`4.x/main`) — v4.1.4**
-> 이 브랜치는 QGIS 4 (Qt6) 포팅 버전입니다. 레거시 WebKit 렌더러는 표준 XYZ
-> 타일 프로바이더로 교체되었습니다. `master` 브랜치는 여전히 QGIS 3.x (Qt5)
-> 사용자를 위한 라인입니다.
+> **v4.1.6 — QGIS 3.40 이상 · 4.x 지원**
+> `master` 브랜치가 4.x 라인입니다. 레거시 WebKit 렌더러는 표준 XYZ 타일
+> 프로바이더로 교체되었고, 하나의 코드로 QGIS 3.40 LTR 이상(Qt5)과
+> QGIS 4.x(Qt6, 주 지원: 4.4 LTR)에서 동작합니다.
 >
-> 설치: QGIS 플러그인 관리자에서 **플러그인 → 플러그인 관리 및 설치 →
-> ZIP에서 설치** 후 `latest-binary/tmsforkorea-4.1.4.zip` 선택.
+> 설치: QGIS 플러그인 관리자(공식 저장소)에서 **플러그인 → 플러그인 관리 및
+> 설치 → 모두** 에서 "TMS for Korea" 를 검색해 설치합니다.
 >
+> - **v4.1.6**: QGIS 3.40 이상 지원(`qgisMinimumVersion=3.40`,
+>   `qgisMaximumVersion=4.99`). 메뉴·정보 창·서브메뉴 아이콘 경로와 옛 레이어
+>   변환 오류(`setVisible`) 수정. 3.0.5 에서 올리는 경우 옛 QtWebKit 방식
+>   레이어(카카오·NGII 등)는 빠졌습니다.
 > - **v4.1.1**: 네이버 타일 미표시 버그 수정 — 네이버 CDN이 QGIS 기본
 >   `User-Agent` 문자열을 차단하던 문제를 우회.
 > - **v4.1.2**: 핫픽스 — Azure 키 설정 다이얼로그에서 `QLineEdit.Normal`
@@ -85,8 +89,9 @@ For English users
 ------------------------------
 This is a QGIS plugin that exposes Korean and international XYZ map tile
 services (VWorld, Naver, OpenStreetMap, Azure Maps) inside the QGIS layer
-panel. It is the QGIS 4.x (Qt6) port of the legacy tmsforkorea plugin;
-the WebKit-based renderer was replaced with native XYZ tile providers.
+panel. It is the rewritten successor of the legacy tmsforkorea plugin and
+runs on QGIS 3.40 LTR or later (Qt5) as well as QGIS 4.x (Qt6); the
+WebKit-based renderer was replaced with native XYZ tile providers.
 
 Azure Maps is the only group that requires a user-supplied subscription
 key (free S0 tier available). Kakao Maps is rendered as a disabled

@@ -35,6 +35,10 @@ changelog=
           레이어(카카오, NGII, 망고 등)는 빠졌고, 현재 브이월드·네이버 지도 v5·
           OpenStreetMap·Azure 지도를 제공합니다. 3.0.5 로 저장한 프로젝트에 있던
           빠진 레이어는 메뉴에서 새로 추가해 주세요.
+        - 수정: 메뉴 아이콘과 정보 창 로고가 보이지 않던 리소스 경로를 바로잡았고,
+          옛 플러그인 레이어를 새 형식으로 바꿀 때 나던 오류(setVisible)를 고쳤습니다.
+        - English: Fixed the missing menu icon and About-dialog logo (wrong resource
+          path) and an AttributeError (setVisible) when converting legacy layers.
         - English: Now supports QGIS 3.40 LTR (minimum) and 3.44 LTR as well as
           QGIS 4.x (Qt6, primary: 4.4 LTR). If you are updating from 3.0.5: the
           old QtWebKit-based layers that no longer worked (Kakao, NGII, Mango)

@@ -14,7 +14,11 @@ TMS for Korea
 > - **v4.1.6**: QGIS 3.40 이상 지원(`qgisMinimumVersion=3.40`,
 >   `qgisMaximumVersion=4.99`). 메뉴·정보 창·서브메뉴 아이콘 경로와 옛 레이어
 >   변환 오류(`setVisible`) 수정. 3.0.5 에서 올리는 경우 옛 QtWebKit 방식
->   레이어(카카오·NGII 등)는 빠졌습니다.
+>   레이어(카카오·NGII 등)는 빠졌습니다. 3.0.5 의 「미리보기」 창(OpenLayers
+>   Overview)도 QtWebKit 기반이라 이번 버전에서는 제공되지 않습니다(Qt6 에는
+>   QtWebKit 이 없음). 미리보기가 꼭 필요하면 3.0.5 를 계속 사용하시고, 의견은
+>   [원 저장소 이슈 #14](https://github.com/mangosystem/qgis-tmsforkorea-plugin/issues/14)
+>   로 남겨 주세요.
 > - **v4.1.1**: 네이버 타일 미표시 버그 수정 — 네이버 CDN이 QGIS 기본
 >   `User-Agent` 문자열을 차단하던 문제를 우회.
 > - **v4.1.2**: 핫픽스 — Azure 키 설정 다이얼로그에서 `QLineEdit.Normal`
@@ -91,7 +95,9 @@ This is a QGIS plugin that exposes Korean and international XYZ map tile
 services (VWorld, Naver, OpenStreetMap, Azure Maps) inside the QGIS layer
 panel. It is the rewritten successor of the legacy tmsforkorea plugin and
 runs on QGIS 3.40 LTR or later (Qt5) as well as QGIS 4.x (Qt6); the
-WebKit-based renderer was replaced with native XYZ tile providers.
+WebKit-based renderer was replaced with native XYZ tile providers. The
+3.0.5 "Preview" (OpenLayers Overview) window was QtWebKit-based and is not
+provided in 4.x; use 3.0.5 if you need it, and see upstream issue #14.
 
 Azure Maps is the only group that requires a user-supplied subscription
 key (free S0 tier available). Kakao Maps is rendered as a disabled

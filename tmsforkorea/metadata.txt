@@ -35,6 +35,11 @@ changelog=
           레이어(카카오, NGII, 망고 등)는 빠졌고, 현재 브이월드·네이버 지도 v5·
           OpenStreetMap·Azure 지도를 제공합니다. 3.0.5 로 저장한 프로젝트에 있던
           빠진 레이어는 메뉴에서 새로 추가해 주세요.
+          3.0.5 의 「미리보기」 창(OpenLayers Overview)도 QtWebKit 기반이라
+          이번 버전에서는 제공되지 않습니다(Qt6 에는 QtWebKit 이 없습니다).
+          미리보기가 꼭 필요하시면 3.0.5 를 계속 사용해 주세요. 의견은 원 저장소
+          이슈 #14 (https://github.com/mangosystem/qgis-tmsforkorea-plugin/issues/14)
+          로 남겨 주세요.
         - 수정: 메뉴 아이콘, 정보 창 로고, OpenStreetMap·Azure 지도 서브메뉴 아이콘이
           보이지 않던 리소스 경로를 바로잡았고, 옛 플러그인 레이어를 새 형식으로
           바꿀 때 나던 오류(setVisible)를 고쳤습니다.
@@ -45,7 +50,10 @@ changelog=
           OpenStreetMap, Azure Maps). Also fixed the missing menu icon,
           About-dialog logo and OpenStreetMap/Azure submenu icons (wrong
           resource paths) and an AttributeError (setVisible) when converting
-          legacy layers.
+          legacy layers. Note: the 3.0.5 "Preview" (OpenLayers Overview)
+          window is also QtWebKit-based and is not provided in this version
+          (Qt6 has no QtWebKit); keep using 3.0.5 if you need it, and share
+          feedback in upstream issue #14.
     4.1.5
         - 공식 저장소 보안 검사 대응: 개발용 업로드 스크립트(plugin_upload.py)와
           Windows 배치 파일(.bat 2개)을 패키지에서 제거 (플러그인 동작과 무관).

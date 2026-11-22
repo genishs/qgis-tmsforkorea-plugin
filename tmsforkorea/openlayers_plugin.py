@@ -186,7 +186,7 @@ class OpenlayersPlugin:
         self._naverUaPreprocessorId = network_hooks.install()
 
         self._olMenu = QMenu("TMS for Korea")
-        self._olMenu.setIcon(QIcon(":/plugins/openlayers/openlayers.png"))
+        self._olMenu.setIcon(QIcon(":/plugins/tmsforkorea/openlayers.png"))
 
         self._actionAbout = QAction("TMS for Korea 정보", self.iface.mainWindow())
         self._actionAbout.triggered.connect(self._showAbout)
@@ -272,7 +272,7 @@ class OpenlayersPlugin:
         # Disabled Kakao Maps placeholder — communicates upstream policy
         # block in the UI itself instead of silently omitting the group.
         self._kakaoPlaceholderMenu = QMenu("카카오 지도")
-        self._kakaoPlaceholderMenu.setIcon(QIcon(":/plugins/openlayers/openlayers.png"))
+        self._kakaoPlaceholderMenu.setIcon(QIcon(":/plugins/tmsforkorea/openlayers.png"))
         self._kakaoInfoAction = QAction(
             "사용 불가 — 카카오 정책 차단 (2025-10-20)",
             self.iface.mainWindow(),

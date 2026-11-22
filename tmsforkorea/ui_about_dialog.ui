@@ -133,7 +133,7 @@ p, li { white-space: pre-wrap; }
           <bool>false</bool>
          </property>
          <property name="pixmap">
-          <pixmap resource="resources.qrc">:/plugins/openlayers/qgiscloud.png</pixmap>
+          <pixmap resource="resources.qrc">:/plugins/tmsforkorea/qgiscloud.png</pixmap>
          </property>
          <property name="scaledContents">
           <bool>false</bool>

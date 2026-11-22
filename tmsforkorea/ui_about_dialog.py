@@ -46,7 +46,7 @@ class Ui_dlgAbout(object):
         self.verticalLayout_5.setObjectName("verticalLayout_5")
         self.logo = QtWidgets.QLabel(self.tab_publishing)
         self.logo.setAutoFillBackground(False)
-        self.logo.setPixmap(QtGui.QPixmap(":/plugins/openlayers/qgiscloud.png"))
+        self.logo.setPixmap(QtGui.QPixmap(":/plugins/tmsforkorea/qgiscloud.png"))
         self.logo.setScaledContents(False)
         self.logo.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
         self.logo.setObjectName("logo")

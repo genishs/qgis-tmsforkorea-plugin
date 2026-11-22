@@ -551,7 +551,7 @@ class OpenlayersPlugin:
                     # insert new layer
                     QgsProject.instance().addMapLayer(newLayer, False)
                     newLayerNode = group.insertLayer(index, newLayer)
-                    newLayerNode.setVisible(child.isVisible())
+                    newLayerNode.setItemVisibilityChecked(child.itemVisibilityChecked())
 
                     # remove old layer
                     QgsProject.instance().removeMapLayer(

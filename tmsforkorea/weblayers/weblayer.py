@@ -20,6 +20,7 @@ email                : pka at sourcepole.ch
  ***************************************************************************/
 """
 
+from qgis.PyQt.QtCore import QFile
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QMenu
 from qgis.core import Qgis as QGis, QgsCoordinateReferenceSystem
@@ -31,8 +32,12 @@ class WebLayerGroup:
 
     def __init__(self, name, icon):
         self._menu = QMenu(name)
-        self._menu.setIcon(QIcon(os.path.join(
-            ":/plugins/tmsforkorea/weblayers/icons", icon)))
+        # Group icons normally live in weblayers/icons; shared plugin-level
+        # icons (e.g. openlayers.png for OSM/Azure) sit at the resource root.
+        path = ":/plugins/tmsforkorea/weblayers/icons/" + icon
+        if not QFile.exists(path):
+            path = ":/plugins/tmsforkorea/" + icon
+        self._menu.setIcon(QIcon(path))
 
     def menu(self):
         return self._menu
